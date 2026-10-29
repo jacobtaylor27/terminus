@@ -58,7 +58,8 @@ body,
 }
 
 .world-map .country,
-.world-map .territory {
+.world-map .territory,
+.world-map .flash {
   stroke: #8f979f;
   stroke-width: 0.5px;
   stroke-linejoin: round;
@@ -76,4 +77,22 @@ body,
 .world-map .territory {
   fill: #bdbdbd;
   pointer-events: none;
+}
+
+.world-map .flash {
+  fill: #f2b632;
+  stroke: #b7791f;
+  stroke-width: 1.5px;
+  pointer-events: none;
+  animation: flash 1.2s ease-out forwards;
+}
+
+@keyframes flash {
+  0%,
+  40% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
 }

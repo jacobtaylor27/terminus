@@ -5,6 +5,7 @@ export interface AttemptState {
   total: number
   found: Place[]
   unfound: Place[]
+  wrongGuessCount: number
 }
 
 export type InputResult =
@@ -12,8 +13,14 @@ export type InputResult =
   | { kind: 'already-found'; place: Place }
   | { kind: 'no-match' }
 
+export type CommitResult =
+  | { kind: 'wrong-guess' }
+  | { kind: 'already-found'; place: Place }
+  | { kind: 'nothing' }
+
 export interface Attempt {
   inputChanged(text: string): InputResult
+  commit(text: string): CommitResult
   state(): AttemptState
 }
 
@@ -35,6 +42,7 @@ export function startAttempt(quiz: Quiz, _mode: Mode): Attempt {
     ),
   )
   const found = new Set<Place>()
+  let wrongGuessCount = 0
 
   return {
     inputChanged(text) {
@@ -45,12 +53,25 @@ export function startAttempt(quiz: Quiz, _mode: Mode): Attempt {
       return { kind: 'accepted', place }
     },
 
+    commit(text) {
+      if (text.trim() === '') return { kind: 'nothing' }
+      const place = placesByAcceptedName.get(normalize(text))
+      if (!place) {
+        wrongGuessCount += 1
+        return { kind: 'wrong-guess' }
+      }
+      if (found.has(place)) return { kind: 'already-found', place }
+      // An Unfound Country is accepted as soon as it is typed, so it never reaches Enter.
+      return { kind: 'nothing' }
+    },
+
     state() {
       return {
         score: found.size,
         total: quiz.places.length,
         found: [...found],
         unfound: quiz.places.filter((place) => !found.has(place)),
+        wrongGuessCount,
       }
     },
   }

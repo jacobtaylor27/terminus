@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react'
+import { type KeyboardEvent, useMemo, useState } from 'react'
 import { startAttempt } from '../attempt/attempt.ts'
-import { WorldMap } from '../map/WorldMap.tsx'
+import { type Flash, WorldMap } from '../map/WorldMap.tsx'
 import type { Mode, Quiz } from '../quiz/quiz.ts'
 
 interface AttemptScreenProps {
@@ -12,6 +12,7 @@ export function AttemptScreen({ quiz, mode }: AttemptScreenProps) {
   const [attempt] = useState(() => startAttempt(quiz, mode))
   const [state, setState] = useState(() => attempt.state())
   const [answer, setAnswer] = useState('')
+  const [flash, setFlash] = useState<Flash | null>(null)
 
   const countryIds = useMemo(() => new Set(quiz.places.map((place) => place.id)), [quiz])
   const foundIds = useMemo(() => new Set(state.found.map((place) => place.id)), [state])
@@ -21,9 +22,21 @@ export function AttemptScreen({ quiz, mode }: AttemptScreenProps) {
     if (result.kind === 'accepted') {
       setAnswer('')
       setState(attempt.state())
-    } else {
-      setAnswer(text)
+      return
     }
+    setAnswer(text)
+    if (result.kind === 'already-found') {
+      const { id } = result.place
+      setFlash((previous) => ({ id, sequence: (previous?.sequence ?? 0) + 1 }))
+    }
+  }
+
+  function handleAnswerKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key !== 'Enter' || event.nativeEvent.isComposing) return
+    const result = attempt.commit(answer)
+    if (result.kind === 'nothing') return
+    setAnswer('')
+    setState(attempt.state())
   }
 
   return (
@@ -38,12 +51,13 @@ export function AttemptScreen({ quiz, mode }: AttemptScreenProps) {
           spellCheck={false}
           value={answer}
           onChange={(event) => handleAnswerChange(event.target.value)}
+          onKeyDown={handleAnswerKeyDown}
         />
         <output className="score" aria-label="Score">
           {state.score}/{state.total}
         </output>
       </header>
-      <WorldMap countryIds={countryIds} foundIds={foundIds} />
+      <WorldMap countryIds={countryIds} foundIds={foundIds} flash={flash} />
     </div>
   )
 }

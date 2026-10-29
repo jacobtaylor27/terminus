@@ -16,3 +16,7 @@
 - [ ] Enter on an already-Found Country clears the box and is not a Wrong Guess
 - [ ] The Wrong Guess count is not shown anywhere in the UI
 - [ ] Attempt-seam tests cover each case above
+
+## Comments
+
+**2026-10-29** — Decided during implementation: a box holding only whitespace counts as empty (Enter does nothing), but punctuation-only text such as "???" is text that matches no Country, so Enter clears it and counts a Wrong Guess. The already-Found highlight is a short amber flash drawn over the Country's whole shape (overseas parts included); it replays whenever the answer-box text changes and still matches a Found Country, e.g. on backspace and retype, or a trailing space. On the map it is called a "flash" to keep it distinct from the Unfound Highlight (ticket 09).

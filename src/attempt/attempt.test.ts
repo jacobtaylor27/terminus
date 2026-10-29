@@ -34,6 +34,7 @@ describe('a new Attempt of Countries of the World', () => {
     expect(state.total).toBe(197)
     expect(state.found).toEqual([])
     expect(state.unfound).toHaveLength(197)
+    expect(state.wrongGuessCount).toBe(0)
   })
 })
 
@@ -91,6 +92,75 @@ describe('typing in the answer box', () => {
 
       expect(attempt.inputChanged(text)).toEqual({ kind: 'no-match' })
       expect(attempt.state()).toEqual(before)
+    },
+  )
+})
+
+describe('pressing Enter', () => {
+  it.each(['Atlantis', '???'])(
+    'on "%s", which matches no Country, counts a Wrong Guess',
+    (text) => {
+      const attempt = start()
+      attempt.inputChanged('Japan')
+      attempt.inputChanged(text)
+
+      expect(attempt.commit(text)).toEqual({ kind: 'wrong-guess' })
+      const state = attempt.state()
+      expect(state.wrongGuessCount).toBe(1)
+      expect(state.score).toBe(1)
+      expect(state.found.map((place) => place.name)).toEqual(['Japan'])
+    },
+  )
+
+  it('counts every Wrong Guess', () => {
+    const attempt = start()
+
+    for (const text of ['Atlantis', 'Brazl', 'Holland']) {
+      attempt.inputChanged(text)
+      attempt.commit(text)
+    }
+
+    expect(attempt.state().wrongGuessCount).toBe(3)
+  })
+
+  it('on text that matches an Unfound Country is not a Wrong Guess', () => {
+    const attempt = start()
+
+    expect(attempt.commit('Japan')).toEqual({ kind: 'nothing' })
+    expect(attempt.state().wrongGuessCount).toBe(0)
+  })
+
+  it('never counts text that was typed and then deleted as a Wrong Guess', () => {
+    const attempt = start()
+    typeKeys(attempt, 'Atlantis')
+    for (let length = 'Atlantis'.length - 1; length >= 0; length--) {
+      attempt.inputChanged('Atlantis'.slice(0, length))
+    }
+
+    expect(attempt.commit('')).toEqual({ kind: 'nothing' })
+    expect(attempt.state().wrongGuessCount).toBe(0)
+  })
+
+  it.each(['', '   '])('on an empty answer box ("%s") does nothing', (text) => {
+    const attempt = start()
+    attempt.inputChanged('Japan')
+    const before = attempt.state()
+
+    expect(attempt.commit(text)).toEqual({ kind: 'nothing' })
+    expect(attempt.state()).toEqual(before)
+  })
+
+  it.each(['Myanmar', 'burma'])(
+    'on an already-Found Country ("%s") is not a Wrong Guess',
+    (text) => {
+      const attempt = start()
+      attempt.inputChanged('Myanmar')
+      attempt.inputChanged(text)
+      const before = attempt.state()
+
+      expect(attempt.commit(text)).toMatchObject({ kind: 'already-found', place: { id: 'MMR' } })
+      expect(attempt.state()).toEqual(before)
+      expect(attempt.state().wrongGuessCount).toBe(0)
     },
   )
 })
