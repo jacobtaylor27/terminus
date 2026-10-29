@@ -1,0 +1,79 @@
+:root {
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  color: #1f2933;
+  background: #f7f7f5;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+.attempt-screen {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.attempt-bar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background: #fff;
+  border-bottom: 1px solid #dde1e6;
+}
+
+.answer-box {
+  width: min(24rem, 100%);
+  padding: 0.5rem 0.75rem;
+  font: inherit;
+  font-size: 1.25rem;
+  border: 2px solid #c9ced6;
+  border-radius: 6px;
+}
+
+.answer-box:focus {
+  outline: none;
+  border-color: #2f6fbf;
+}
+
+.score {
+  font-size: 1.25rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.world-map {
+  display: block;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+}
+
+.world-map .sphere {
+  fill: #d7e6f0;
+}
+
+.world-map .country,
+.world-map .territory {
+  stroke: #8f979f;
+  stroke-width: 0.5px;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.world-map .country {
+  fill: #f4f1ea;
+}
+
+.world-map .country.found {
+  fill: #2e7d4f;
+}
+
+.world-map .territory {
+  fill: #bdbdbd;
+  pointer-events: none;
+}

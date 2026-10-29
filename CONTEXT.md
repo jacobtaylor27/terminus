@@ -25,9 +25,17 @@ A Mode where a place is highlighted on the map and the player must type its name
 An optional countdown the player switches on and sets (default 15:00) before an Attempt starts, fixed once it begins; the Attempt ends when it reaches zero. Without a Timer, the Attempt's elapsed time counts up instead.
 _Avoid_: Timer mode, timed mode
 
+**Place**:
+Anything a Quiz asks about that the player can give as an answer, with a stable id and a display name — a Country in *Countries of the World*, a capital in *Capitals of Africa*.
+_Avoid_: Item, question
+
 **Country**:
-One of the 197 places Terminus treats as countries: the 193 UN member states plus Vatican City, Palestine, Kosovo and Taiwan. Dependent territories (e.g. Greenland, Puerto Rico, Western Sahara) are not Countries; they appear on the map but are never answers. Breakaway regions (Somaliland, Northern Cyprus) are part of their parent Country.
+One of the 197 places Terminus treats as countries: the 193 UN member states plus Vatican City, Palestine, Kosovo and Taiwan. Dependent territories and autonomous regions (e.g. Greenland, Puerto Rico, Hong Kong) and breakaway regions (Somaliland, Northern Cyprus) are not Countries of their own; they are part of the Country they belong to.
 _Avoid_: Nation, state
+
+**Territory**:
+Land on the map that belongs to no Country — Antarctica, and the disputed Western Sahara and Siachen Glacier. A Territory is drawn but is never an answer.
+_Avoid_: Using it for dependent territories, which are part of their Country
 
 **Alias**:
 An alternative name accepted as a correct answer for a place: a short form (USA), another-language name (Ivory Coast / Côte d'Ivoire) or a well-known former name (Burma). Ambiguous colloquial names (America, Holland, England) are not Aliases.
