@@ -1,7 +1,9 @@
 import { geoContains } from 'd3-geo'
 import { describe, expect, it } from 'vitest'
+import { startAttempt } from '../attempt/attempt.ts'
 import { mapShapes } from '../map/mapShapes.ts'
 import { countriesOfTheWorld } from './countriesOfTheWorld.ts'
+import { acceptedNames } from './quiz.ts'
 
 const countryIds = countriesOfTheWorld.places.map((place) => place.id)
 
@@ -12,6 +14,17 @@ describe('Countries of the World data', () => {
   it('has 197 Countries with no duplicated id', () => {
     expect(countryIds).toHaveLength(197)
     expect(new Set(countryIds).size).toBe(197)
+  })
+
+  it('lets every name and Alias Find its own Country, so none is shared with another', () => {
+    const namesNotFindingTheirCountry = countriesOfTheWorld.places.flatMap((place) =>
+      acceptedNames(place).filter((name) => {
+        const result = startAttempt(countriesOfTheWorld, 'free-recall').inputChanged(name)
+        return result.kind !== 'accepted' || result.place !== place
+      }),
+    )
+
+    expect(namesNotFindingTheirCountry).toEqual([])
   })
 
   it('gives every Country exactly one map shape', () => {

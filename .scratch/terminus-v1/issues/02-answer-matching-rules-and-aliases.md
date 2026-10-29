@@ -17,3 +17,7 @@
 - [ ] After "Niger" auto-accepts mid-way through typing "Nigeria", typing "Nigeria" again Finds Nigeria
 - [ ] Attempt-seam tests cover each rule above
 - [ ] Data consistency test: no name or Alias normalizes to the same text as another Country's name or Alias
+
+## Comments
+
+**2026-10-29** — Decided during implementation: short forms that begin a longer name of the same Country (US, Bosnia, Vatican, Trinidad, Antigua) are not Aliases. Auto-accept would fire on them part-way through the full name and leave the rest of it in the answer box, so a player typing "Bosnia" just keeps typing to "Bosnia and Herzegovina" instead. Two required Aliases fire early inside another Country's name, the same quirk as Niger/Nigeria: "UK" while typing "Ukraine", and "Congo" while typing "Congo-Kinshasa" (which credits the Republic of the Congo first). Retyping Finds the intended Country; tests cover both.
