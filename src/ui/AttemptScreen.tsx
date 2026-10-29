@@ -1,6 +1,6 @@
 import { type KeyboardEvent, useMemo, useState } from 'react'
 import { startAttempt } from '../attempt/attempt.ts'
-import { type Flash, WorldMap } from '../map/WorldMap.tsx'
+import { type Cue, WorldMap } from '../map/WorldMap.tsx'
 import type { Mode, Quiz } from '../quiz/quiz.ts'
 
 interface AttemptScreenProps {
@@ -12,9 +12,9 @@ export function AttemptScreen({ quiz, mode }: AttemptScreenProps) {
   const [attempt] = useState(() => startAttempt(quiz, mode))
   const [state, setState] = useState(() => attempt.state())
   const [answer, setAnswer] = useState('')
-  const [flash, setFlash] = useState<Flash | null>(null)
+  const [pulse, setPulse] = useState<Cue | null>(null)
+  const [flash, setFlash] = useState<Cue | null>(null)
 
-  const countryIds = useMemo(() => new Set(quiz.places.map((place) => place.id)), [quiz])
   const foundIds = useMemo(() => new Set(state.found.map((place) => place.id)), [state])
 
   function handleAnswerChange(text: string) {
@@ -22,13 +22,11 @@ export function AttemptScreen({ quiz, mode }: AttemptScreenProps) {
     if (result.kind === 'accepted') {
       setAnswer('')
       setState(attempt.state())
+      setPulse(nextCue(result.place.id))
       return
     }
     setAnswer(text)
-    if (result.kind === 'already-found') {
-      const { id } = result.place
-      setFlash((previous) => ({ id, sequence: (previous?.sequence ?? 0) + 1 }))
-    }
+    if (result.kind === 'already-found') setFlash(nextCue(result.place.id))
   }
 
   function handleAnswerKeyDown(event: KeyboardEvent<HTMLInputElement>) {
@@ -57,7 +55,12 @@ export function AttemptScreen({ quiz, mode }: AttemptScreenProps) {
           {state.score}/{state.total}
         </output>
       </header>
-      <WorldMap countryIds={countryIds} foundIds={foundIds} flash={flash} />
+      <WorldMap countries={quiz.places} foundIds={foundIds} tooltips="found" pulse={pulse} flash={flash} />
     </div>
   )
+}
+
+// Cues the Country with the next sequence number, so its animation replays.
+function nextCue(id: string) {
+  return (previous: Cue | null): Cue => ({ id, sequence: (previous?.sequence ?? 0) + 1 })
 }

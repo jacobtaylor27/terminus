@@ -18,3 +18,7 @@ Build the map's zoom and hover behaviour so it can be reused by the Results scre
 - [ ] Hovering a Found Country shows a tooltip with its name
 - [ ] Hovering an Unfound Country or a territory shows no tooltip and no hover effect that could hint at an answer
 - [ ] Tooltip behaviour is configurable per map instance so the Reveal map can show all names
+
+## Comments
+
+**2026-10-29** — Decided during implementation: a Country gets a circle marker when its largest piece of land covers less than 5 square units of the 960-wide map at full-world zoom (about a 3 × 3 pixel square on a laptop). That gives 36 markers, from Vatican City up to Palestine; the next Countries up (Gambia, Cyprus, Fiji, Jamaica, Lebanon) are small but visible shapes. The marker sits in the middle of that largest piece, so Kiribati's is on Kiritimati, and keeps its size on screen as the map zooms. Territories never get one. The pulse is a light-green glow that spreads out from the Country's whole shape and its marker, twice, then fades. Hovering a Country that shows its name outlines it as well as showing the tooltip. The tooltip hides during a wheel zoom or the reset and comes back when the pointer moves. The map is zoomable to 40×, and "Reset view" animates back to the whole world. The ticket 03 flash now also covers markers. `WorldMap` takes `tooltips: 'found' | 'all'` for the Reveal map (ticket 06). Touch pinch relies on d3-zoom's defaults and hasn't been tried on a touch device.
