@@ -1,12 +1,27 @@
 import { acceptedNames, type Mode, type Place, type Quiz } from '../quiz/quiz.ts'
 
-export interface AttemptState {
+// The current time in milliseconds. An Attempt is given one rather than reading the real clock,
+// so tests control time.
+export type Clock = () => number
+
+// How an Attempt ended.
+export type Ending = 'completed' | 'gave-up'
+
+interface Progress {
   score: number
   total: number
   found: Place[]
   unfound: Place[]
   wrongGuessCount: number
+  elapsedMs: number
 }
+
+export type AttemptState =
+  | (Progress & { status: 'in-progress' })
+  // Once the Attempt has ended, the Countries still Unfound are Missed.
+  | (Progress & { status: Ending; missed: Place[] })
+
+export type EndedAttemptState = Extract<AttemptState, { status: Ending }>
 
 export type InputResult =
   | { kind: 'accepted'; place: Place }
@@ -21,6 +36,7 @@ export type CommitResult =
 export interface Attempt {
   inputChanged(text: string): InputResult
   commit(text: string): CommitResult
+  giveUp(): void
   state(): AttemptState
 }
 
@@ -35,7 +51,8 @@ function normalize(text: string): string {
     .replace(/^the /, '')
 }
 
-export function startAttempt(quiz: Quiz, _mode: Mode): Attempt {
+export function startAttempt(quiz: Quiz, _mode: Mode, clock: Clock): Attempt {
+  const startedAt = clock()
   const placesByAcceptedName = new Map(
     quiz.places.flatMap((place) =>
       acceptedNames(place).map((name) => [normalize(name), place] as const),
@@ -43,18 +60,22 @@ export function startAttempt(quiz: Quiz, _mode: Mode): Attempt {
   )
   const found = new Set<Place>()
   let wrongGuessCount = 0
+  // How and when the Attempt ended, once it has.
+  let end: { ending: Ending; at: number } | undefined
 
   return {
     inputChanged(text) {
+      if (end) return { kind: 'no-match' }
       const place = placesByAcceptedName.get(normalize(text))
       if (!place) return { kind: 'no-match' }
       if (found.has(place)) return { kind: 'already-found', place }
       found.add(place)
+      if (found.size === quiz.places.length) end = { ending: 'completed', at: clock() }
       return { kind: 'accepted', place }
     },
 
     commit(text) {
-      if (text.trim() === '') return { kind: 'nothing' }
+      if (end || text.trim() === '') return { kind: 'nothing' }
       const place = placesByAcceptedName.get(normalize(text))
       if (!place) {
         wrongGuessCount += 1
@@ -65,14 +86,24 @@ export function startAttempt(quiz: Quiz, _mode: Mode): Attempt {
       return { kind: 'nothing' }
     },
 
+    giveUp() {
+      end ??= { ending: 'gave-up', at: clock() }
+    },
+
     state() {
-      return {
+      const unfound = quiz.places.filter((place) => !found.has(place))
+      const progress: Progress = {
         score: found.size,
         total: quiz.places.length,
         found: [...found],
-        unfound: quiz.places.filter((place) => !found.has(place)),
+        unfound,
         wrongGuessCount,
+        // Measured between timestamps, so it stays right however rarely it is read.
+        elapsedMs: (end?.at ?? clock()) - startedAt,
       }
+      return end
+        ? { ...progress, status: end.ending, missed: unfound }
+        : { ...progress, status: 'in-progress' }
     },
   }
 }

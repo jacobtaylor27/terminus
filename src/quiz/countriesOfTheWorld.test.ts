@@ -19,7 +19,7 @@ describe('Countries of the World data', () => {
   it('lets every name and Alias Find its own Country, so none is shared with another', () => {
     const namesNotFindingTheirCountry = countriesOfTheWorld.places.flatMap((place) =>
       acceptedNames(place).filter((name) => {
-        const result = startAttempt(countriesOfTheWorld, 'free-recall').inputChanged(name)
+        const result = startAttempt(countriesOfTheWorld, 'free-recall', () => 0).inputChanged(name)
         return result.kind !== 'accepted' || result.place !== place
       }),
     )

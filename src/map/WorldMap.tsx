@@ -51,6 +51,8 @@ export interface Cue {
 interface WorldMapProps {
   countries: readonly Place[]
   foundIds: ReadonlySet<string>
+  // Countries to Reveal as Missed, once an Attempt has ended.
+  missedIds: ReadonlySet<string> | null
   // Which Countries show their name on hover: only Found ones during an Attempt, or all of them.
   // Territories never do.
   tooltips: 'found' | 'all'
@@ -66,7 +68,7 @@ interface Hover {
   y: number
 }
 
-export function WorldMap({ countries, foundIds, tooltips, pulse, flash }: WorldMapProps) {
+export function WorldMap({ countries, foundIds, missedIds, tooltips, pulse, flash }: WorldMapProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const svgRef = useRef<SVGSVGElement>(null)
   const zoomRef = useRef<ZoomBehavior<SVGSVGElement, unknown>>(null)
@@ -103,19 +105,19 @@ export function WorldMap({ countries, foundIds, tooltips, pulse, flash }: WorldM
   }, [])
   const endHover = useCallback(() => setHover(null), [])
 
-  // Re-rendered only when a Country is Found, not on every zoom or pointer move.
+  // Re-rendered only when the Found or Missed Countries change, not on every zoom or pointer move.
   const shapeElements = useMemo(
     () =>
       shapePaths.map(({ id, d }) => (
         <path
           key={id}
           d={d}
-          className={shapeClass(id, countryIds, foundIds)}
+          className={shapeClass(id, countryIds, foundIds, missedIds)}
           onPointerMove={(event) => hoverAt(id, event)}
           onPointerLeave={endHover}
         />
       )),
-    [countryIds, foundIds, hoverAt, endHover],
+    [countryIds, foundIds, missedIds, hoverAt, endHover],
   )
 
   const markerRadius = MARKER_RADIUS / transform.k
@@ -142,7 +144,7 @@ export function WorldMap({ countries, foundIds, tooltips, pulse, flash }: WorldM
                 cx={x}
                 cy={y}
                 r={markerRadius}
-                className={`${shapeClass(id, countryIds, foundIds)} marker`}
+                className={`${shapeClass(id, countryIds, foundIds, missedIds)} marker`}
                 onPointerMove={(event) => hoverAt(id, event)}
                 onPointerLeave={endHover}
               />
@@ -183,7 +185,13 @@ function Overlay({ kind, id, markerRadius }: OverlayProps) {
   )
 }
 
-function shapeClass(id: string, countryIds: ReadonlySet<string>, foundIds: ReadonlySet<string>) {
+function shapeClass(
+  id: string,
+  countryIds: ReadonlySet<string>,
+  foundIds: ReadonlySet<string>,
+  missedIds: ReadonlySet<string> | null,
+) {
   if (!countryIds.has(id)) return 'territory'
-  return foundIds.has(id) ? 'country found' : 'country'
+  if (foundIds.has(id)) return 'country found'
+  return missedIds?.has(id) ? 'country missed' : 'country'
 }

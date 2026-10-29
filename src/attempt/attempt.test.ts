@@ -1,8 +1,19 @@
 import { describe, expect, it } from 'vitest'
 import { countriesOfTheWorld } from '../quiz/countriesOfTheWorld.ts'
-import { type Attempt, startAttempt } from './attempt.ts'
+import { type Attempt, type Clock, startAttempt } from './attempt.ts'
 
-const start = () => startAttempt(countriesOfTheWorld, 'free-recall')
+const start = (clock: Clock = () => 0) => startAttempt(countriesOfTheWorld, 'free-recall', clock)
+
+// A clock that stands still until the test moves it on, starting from an arbitrary moment.
+function testClock() {
+  let now = 1_000_000
+  return {
+    now: () => now,
+    advance(ms: number) {
+      now += ms
+    },
+  }
+}
 
 // The Country a new Attempt Finds when the text is typed into its answer box, if any.
 function countryFoundBy(text: string): string | undefined {
@@ -26,6 +37,17 @@ function typeKeys(attempt: Attempt, text: string): string[] {
   return found
 }
 
+function findEveryCountry(attempt: Attempt) {
+  for (const place of countriesOfTheWorld.places) attempt.inputChanged(place.name)
+}
+
+// The state of an Attempt that has ended, failing the test if it is still in progress.
+function endedState(attempt: Attempt) {
+  const state = attempt.state()
+  if (state.status === 'in-progress') throw new Error('The Attempt is still in progress')
+  return state
+}
+
 describe('a new Attempt of Countries of the World', () => {
   it('has a Score of 0 out of 197 with every Country Unfound', () => {
     const state = start().state()
@@ -35,6 +57,125 @@ describe('a new Attempt of Countries of the World', () => {
     expect(state.found).toEqual([])
     expect(state.unfound).toHaveLength(197)
     expect(state.wrongGuessCount).toBe(0)
+  })
+
+  it('is in progress, with no time elapsed', () => {
+    const state = start(testClock().now).state()
+
+    expect(state.status).toBe('in-progress')
+    expect(state.elapsedMs).toBe(0)
+  })
+})
+
+describe('elapsed time', () => {
+  it('is the time since the Attempt started, by the clock it was given', () => {
+    const clock = testClock()
+    const attempt = start(clock.now)
+
+    clock.advance(1_500)
+    expect(attempt.state().elapsedMs).toBe(1_500)
+
+    clock.advance(61_000)
+    expect(attempt.state().elapsedMs).toBe(62_500)
+  })
+
+  it('stays correct however long it goes unread, as in a background tab', () => {
+    const clock = testClock()
+    const attempt = start(clock.now)
+    attempt.inputChanged('Japan')
+
+    clock.advance(10 * 60_000)
+
+    expect(attempt.state().elapsedMs).toBe(10 * 60_000)
+    expect(attempt.state().status).toBe('in-progress')
+  })
+})
+
+describe('Finding every Country', () => {
+  const [lastCountry, ...otherCountries] = countriesOfTheWorld.places
+
+  it('ends the Attempt as Completed the moment the 197th is Found, with nothing Missed', () => {
+    const clock = testClock()
+    const attempt = start(clock.now)
+    for (const place of otherCountries) {
+      attempt.inputChanged(place.name)
+      clock.advance(1_000)
+    }
+    expect(attempt.state().status).toBe('in-progress')
+
+    expect(attempt.inputChanged(lastCountry.name)).toMatchObject({
+      kind: 'accepted',
+      place: { id: lastCountry.id },
+    })
+
+    const state = endedState(attempt)
+    expect(state.status).toBe('completed')
+    expect(state.score).toBe(197)
+    expect(state.missed).toEqual([])
+    expect(state.elapsedMs).toBe(196_000)
+  })
+
+  it('stops the clock when the Attempt is Completed', () => {
+    const clock = testClock()
+    const attempt = start(clock.now)
+    findEveryCountry(attempt)
+    clock.advance(60_000)
+
+    expect(attempt.state().elapsedMs).toBe(0)
+  })
+})
+
+describe('giving up', () => {
+  it('ends the Attempt as Gave up, with every Unfound Country Missed', () => {
+    const attempt = start()
+    attempt.inputChanged('Japan')
+    attempt.inputChanged('Peru')
+
+    attempt.giveUp()
+
+    const state = endedState(attempt)
+    expect(state.status).toBe('gave-up')
+    expect(state.score).toBe(2)
+    expect(state.missed).toHaveLength(195)
+    const missedIds = state.missed.map((place) => place.id)
+    expect(missedIds).toContain('FRA')
+    expect(missedIds).not.toContain('JPN')
+    expect(missedIds).not.toContain('PER')
+  })
+
+  it('stops the clock at the moment the player gives up', () => {
+    const clock = testClock()
+    const attempt = start(clock.now)
+    clock.advance(5 * 60_000)
+
+    attempt.giveUp()
+    clock.advance(60_000)
+
+    expect(attempt.state().elapsedMs).toBe(5 * 60_000)
+  })
+})
+
+describe('an Attempt that has ended', () => {
+  it('accepts no answers and counts no Wrong Guesses', () => {
+    const attempt = start()
+    attempt.inputChanged('Japan')
+    attempt.giveUp()
+    const before = attempt.state()
+
+    expect(attempt.inputChanged('France')).toEqual({ kind: 'no-match' })
+    expect(attempt.commit('Atlantis')).toEqual({ kind: 'nothing' })
+    expect(attempt.state()).toEqual(before)
+  })
+
+  it('stays Completed if the player then gives up', () => {
+    const clock = testClock()
+    const attempt = start(clock.now)
+    findEveryCountry(attempt)
+    clock.advance(60_000)
+
+    attempt.giveUp()
+
+    expect(attempt.state()).toMatchObject({ status: 'completed', elapsedMs: 0, missed: [] })
   })
 })
 

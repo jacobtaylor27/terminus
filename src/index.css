@@ -185,6 +185,110 @@ body,
   font-variant-numeric: tabular-nums;
 }
 
+.clock {
+  font-size: 1.25rem;
+  color: #5f676f;
+  font-variant-numeric: tabular-nums;
+}
+
+.give-up-button {
+  margin-left: auto;
+  padding: 0.4rem 0.9rem;
+  font: inherit;
+  color: inherit;
+  background: #fff;
+  border: 1px solid #c9ced6;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.give-up-button:hover {
+  background: #f0f2f4;
+}
+
+.results-screen {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.results-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem 2rem;
+  padding: 0.75rem 1rem;
+  background: #fff;
+  border-bottom: 1px solid #dde1e6;
+}
+
+.results-quiz {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #5f676f;
+}
+
+.results-ending {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.results-stats {
+  display: flex;
+  gap: 1.5rem;
+  margin: 0;
+}
+
+.results-stats dt {
+  font-size: 0.875rem;
+  color: #5f676f;
+}
+
+.results-stats dd {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.map-legend {
+  display: flex;
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  font-size: 0.875rem;
+  list-style: none;
+}
+
+.map-legend li::before {
+  content: '';
+  display: inline-block;
+  width: 0.75rem;
+  height: 0.75rem;
+  margin-right: 0.35rem;
+  vertical-align: -0.1rem;
+  border-radius: 2px;
+}
+
+.map-legend .found::before {
+  background: #2e7d4f;
+}
+
+.map-legend .missed::before {
+  background: #e0533f;
+}
+
+.results-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-left: auto;
+}
+
+.results-actions .back-button {
+  margin: 0;
+}
+
 .world-map {
   position: relative;
   flex: 1;
@@ -219,6 +323,10 @@ body,
   fill: #2e7d4f;
 }
 
+.world-map .country.missed {
+  fill: #e0533f;
+}
+
 .world-map .territory {
   fill: #bdbdbd;
   pointer-events: none;
@@ -231,6 +339,10 @@ body,
 
 .world-map .marker.found {
   stroke: #1b4d30;
+}
+
+.world-map .marker.missed {
+  stroke: #8f2a1e;
 }
 
 .world-map .overlay {
