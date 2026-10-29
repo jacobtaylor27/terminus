@@ -1,0 +1,3 @@
+# Draw our own SVG map instead of using a tile map library
+
+The map is rendered as SVG from Natural Earth country shapes using `d3-geo` (projection) and `d3-zoom` (zoom and pan), not with a tile-based library such as Leaflet or MapLibre. Terminus needs a flat map of distinct country shapes that can be individually coloured, pulsed, highlighted and hovered; tile libraries are built for streets and imagery and make per-country styling awkward, while 197 SVG shapes are well within what the browser renders smoothly. Natural Earth also includes Kosovo, Taiwan and the dependent territories, and its 1:50m detail covers the small island nations.
