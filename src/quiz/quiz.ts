@@ -1,5 +1,10 @@
 export type Mode = 'free-recall'
 
+// How each Mode is presented to the player when choosing one.
+export const modeDetails: Record<Mode, { name: string; description: string }> = {
+  'free-recall': { name: 'Free Recall', description: 'Type every answer you can think of, in any order.' },
+}
+
 export interface Place {
   id: string
   name: string

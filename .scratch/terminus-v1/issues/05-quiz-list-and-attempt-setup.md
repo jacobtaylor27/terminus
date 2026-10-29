@@ -14,3 +14,7 @@
 - [ ] The setup screen's Mode picker offers only the Modes the Quiz declares (Free Recall only for *Countries of the World*)
 - [ ] Start begins an Attempt of the chosen Quiz in the chosen Mode, with the answer box focused
 - [ ] The setup screen can be left to return to the Quiz list
+
+## Comments
+
+**2026-10-29** — Decided during implementation: the Quiz catalog is `quizCatalog` in `src/quiz/catalog.ts`, and each Mode's name and one-line description for the picker live beside the `Mode` type (`modeDetails` in `src/quiz/quiz.ts`), so adding Locate or Name won't typecheck until it has both. The Mode picker is a radio group that shows even when the Quiz has only one Mode, with the first Mode chosen. The Start button is focused on arrival, so Enter starts the Attempt straight away. A Quiz card shows only the title for now, at the top of the card so ticket 10's Personal Best can go beneath it. The screens are switched by state in `App`, with no URLs, so the browser's back button doesn't move between them and a reload returns to the Quiz list. An Attempt has no way out except a reload until Give up arrives in ticket 06. The setup screen is a `<form>`, so ticket 07's −/+ Timer buttons must be `type="button"`.

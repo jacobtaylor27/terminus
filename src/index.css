@@ -11,6 +11,145 @@ body,
   margin: 0;
 }
 
+.page {
+  box-sizing: border-box;
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: 3rem 1.5rem;
+}
+
+.app-title {
+  margin: 0 0 2rem;
+  font-size: 2.5rem;
+  letter-spacing: -0.02em;
+}
+
+.page-heading {
+  margin: 0 0 1.5rem;
+  font-size: 1.5rem;
+}
+
+.quiz-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.quiz-card {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  min-height: 7rem;
+  padding: 1.25rem;
+  font: inherit;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: inherit;
+  text-align: left;
+  background: #fff;
+  border: 1px solid #dde1e6;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.quiz-card:hover {
+  border-color: #2f6fbf;
+}
+
+.back-button {
+  margin: 0 0 1.5rem;
+  padding: 0.25rem 0;
+  font: inherit;
+  color: #2f6fbf;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.back-button:hover {
+  text-decoration: underline;
+}
+
+.attempt-setup {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1.5rem;
+}
+
+.mode-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.mode-picker legend {
+  margin-bottom: 0.5rem;
+  padding: 0;
+  font-weight: 600;
+}
+
+.mode-option {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 0.5rem;
+  width: 16rem;
+  padding: 0.75rem 1rem;
+  background: #fff;
+  border: 1px solid #dde1e6;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.mode-option:has(:checked) {
+  border-color: #2f6fbf;
+  box-shadow: 0 0 0 1px #2f6fbf;
+}
+
+.mode-option input {
+  margin: 0.2rem 0 0;
+  accent-color: #2f6fbf;
+}
+
+.mode-name {
+  font-weight: 600;
+}
+
+.mode-description {
+  grid-column: 2;
+  font-size: 0.875rem;
+  color: #5f676f;
+}
+
+.start-button {
+  padding: 0.6rem 2rem;
+  font: inherit;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #fff;
+  background: #2f6fbf;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.start-button:hover {
+  background: #275d9f;
+}
+
+.start-button:focus-visible {
+  outline: 2px solid #1f2933;
+  outline-offset: 2px;
+}
+
 .attempt-screen {
   display: flex;
   flex-direction: column;
