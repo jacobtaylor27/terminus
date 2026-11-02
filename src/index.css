@@ -18,6 +18,29 @@ body,
   padding: 3rem 1.5rem;
 }
 
+/* The home page fills the window, so the version sits at its foot. */
+.home-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.app-version {
+  margin-top: auto;
+  padding-top: 3rem;
+  font-size: 0.75rem;
+  text-align: center;
+}
+
+.app-version a {
+  color: #5f676f;
+  text-decoration: none;
+}
+
+.app-version a:hover {
+  text-decoration: underline;
+}
+
 .app-title {
   margin: 0 0 2rem;
   font-size: 2.5rem;

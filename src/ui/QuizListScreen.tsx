@@ -7,6 +7,12 @@ import { formatTimerTime, formatTimeTaken } from './formatDuration.ts'
 // starts on. Those for other Timers are kept too, but would crowd the card.
 const CARD_TIMERS: readonly TimerSetting[] = [null, DEFAULT_TIMER_MS]
 
+// Which build this is, baked in by vite.config.ts.
+declare const __APP_VERSION__: { version: string; build: number; commit: string }
+const appVersion = __APP_VERSION__
+
+const REPOSITORY_URL = 'https://github.com/jacobtaylor27/terminus'
+
 interface QuizListScreenProps {
   quizzes: readonly Quiz[]
   records: Records
@@ -15,7 +21,7 @@ interface QuizListScreenProps {
 
 export function QuizListScreen({ quizzes, records, onChoose }: QuizListScreenProps) {
   return (
-    <main className="page">
+    <main className="page home-page">
       <h1 className="app-title">Terminus</h1>
       <h2 className="page-heading">Choose a Quiz</h2>
       <ul className="quiz-list">
@@ -28,6 +34,11 @@ export function QuizListScreen({ quizzes, records, onChoose }: QuizListScreenPro
           </li>
         ))}
       </ul>
+      <footer className="app-version">
+        <a href={`${REPOSITORY_URL}/commit/${appVersion.commit}`} title={`Commit ${appVersion.commit.slice(0, 7)}`}>
+          v{appVersion.version} ({appVersion.build})
+        </a>
+      </footer>
     </main>
   )
 }

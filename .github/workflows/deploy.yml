@@ -20,6 +20,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          # The whole history, so the build number (a count of the commits) is right.
+          fetch-depth: 0
 
       - uses: pnpm/action-setup@v6
         with:
