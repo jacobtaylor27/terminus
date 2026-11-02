@@ -211,9 +211,10 @@ body,
   margin: 0 0 1.5rem;
 }
 
+/* Wide enough that "Countries of the World" fits on one line. */
 .quiz-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(19rem, 1fr));
   gap: 1rem;
   margin: 0;
   padding: 0;
@@ -229,8 +230,6 @@ body,
   min-height: 7rem;
   padding: 1.25rem;
   font: inherit;
-  font-size: 1.125rem;
-  font-weight: 600;
   color: inherit;
   text-align: left;
   background: var(--paper-raised);
@@ -243,38 +242,44 @@ body,
   border-color: var(--ink);
 }
 
+/* The Personal Bests, at the card's foot: one block per setting, each a small label over its figure,
+   so the setting and the result never share a line. */
 .quiz-bests {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 0.25rem 1rem;
+  display: flex;
+  flex-direction: column;
   align-self: stretch;
   margin-top: auto;
-  padding-top: 1rem;
-  font-size: 0.875rem;
-  font-weight: 400;
+  padding-top: 0.75rem;
 }
 
-.quiz-bests-label,
-.quiz-best-result.none {
-  color: var(--ink-muted);
-}
-
-.quiz-bests-label {
-  grid-column: 1 / -1;
+.quiz-bests-heading {
+  padding-bottom: 0.4rem;
 }
 
 .quiz-best {
-  display: contents;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.7rem 0;
+  border-top: 1px solid var(--hairline);
 }
 
-.quiz-best-result {
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  text-align: right;
+.quiz-best:last-child {
+  padding-bottom: 0;
 }
 
-.quiz-best-result.none {
-  font-weight: 400;
+.quiz-best .score-figure {
+  font-size: 1.375rem;
+  line-height: 1.1;
+}
+
+.quiz-best-time {
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.quiz-best-time,
+.quiz-best-unplayed {
+  color: var(--ink-muted);
 }
 
 .setup-back {
