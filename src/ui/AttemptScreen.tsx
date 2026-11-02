@@ -9,6 +9,7 @@ import {
 import { type Cue, WorldMap } from '../map/WorldMap.tsx'
 import type { Mode, Quiz } from '../quiz/quiz.ts'
 import { formatDuration, formatTimerTime } from './formatDuration.ts'
+import { ScoreFigure } from './ScoreFigure.tsx'
 
 // How often the clock reads the Attempt's time. The time itself comes from timestamps, so a tick
 // that a background tab delays only delays the display, and the Timer still runs out on time.
@@ -124,8 +125,8 @@ export function AttemptScreen({ quiz, mode, timer, onEnd }: AttemptScreenProps) 
             onChange={(event) => handleAnswerChange(event.target.value)}
             onKeyDown={handleAnswerKeyDown}
           />
-          <output className="score" aria-label="Score">
-            {state.score}/{state.total}
+          <output aria-label="Score">
+            <ScoreFigure score={state.score} total={state.total} />
           </output>
           <span className="clock" role="timer" aria-label={clockLabel}>
             {clockText}
@@ -160,14 +161,14 @@ export function AttemptScreen({ quiz, mode, timer, onEnd }: AttemptScreenProps) 
           <h1 className="pause-title">Paused</h1>
           <dl className="pause-stats">
             <div>
-              <dt>Score</dt>
+              <dt className="small-label">Score</dt>
               <dd>
-                {state.score}/{state.total}
+                <ScoreFigure score={state.score} total={state.total} />
               </dd>
             </div>
             <div>
-              <dt>{clockLabel}</dt>
-              <dd>{clockText}</dd>
+              <dt className="small-label">{clockLabel}</dt>
+              <dd className="pause-clock">{clockText}</dd>
             </div>
           </dl>
           {/* Give up is only reached from here, so ending an Attempt takes a Pause first. */}

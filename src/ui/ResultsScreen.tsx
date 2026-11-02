@@ -3,6 +3,7 @@ import type { EndedAttemptState, Ending } from '../attempt/attempt.ts'
 import { WorldMap } from '../map/WorldMap.tsx'
 import type { Quiz } from '../quiz/quiz.ts'
 import { formatTimerTime, formatTimeTaken } from './formatDuration.ts'
+import { ScoreFigure } from './ScoreFigure.tsx'
 
 // How each way an Attempt can end is announced on the Results screen.
 const endingTitles: Record<Ending, string> = {
@@ -28,22 +29,22 @@ export function ResultsScreen({ quiz, finalState, newBest, onPlayAgain, onBack }
     <div className="results-screen">
       <header className="results-bar">
         <div className="results-heading">
-          <p className="results-quiz">{quiz.title}</p>
+          <p className="small-label results-quiz">{quiz.title}</p>
           <h1 className="results-ending">{endingTitles[finalState.status]}</h1>
         </div>
         <dl className="results-stats">
           <div>
-            <dt>Score</dt>
+            <dt className="small-label">Score</dt>
             <dd>
-              {finalState.score}/{finalState.total}
+              <ScoreFigure score={finalState.score} total={finalState.total} />
             </dd>
           </div>
           <div>
-            <dt>Time</dt>
+            <dt className="small-label">Time</dt>
             <dd>{formatTimeTaken(finalState.elapsedMs, finalState.timer !== null)}</dd>
           </div>
           <div>
-            <dt>Timer</dt>
+            <dt className="small-label">Timer</dt>
             <dd>{finalState.timer ? formatTimerTime(finalState.timer.durationMs) : 'Off'}</dd>
           </div>
         </dl>

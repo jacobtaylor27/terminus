@@ -31,6 +31,11 @@
   /* How much paper a frosted panel is; the map shows through the rest. */
   --panel-paper-share: 72%;
 
+  /* The serif for display text, which ships with the site. Until it loads, display text shows at
+     once in Georgia. */
+  --display-font: 'Newsreader Variable', Georgia, serif;
+
+  /* Everything that isn't display text. */
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   color: var(--ink);
   background: var(--paper);
@@ -104,6 +109,41 @@ body,
   text-decoration-color: currentColor;
 }
 
+/* Display text is set in the serif: the titles and headings, and the Score figures. */
+.app-title,
+.page-heading,
+.quiz-title,
+.pause-title,
+.results-ending,
+.score-figure {
+  font-family: var(--display-font);
+  font-weight: 600;
+}
+
+/* A Score figure takes its size from where it's shown. Its digits are fixed-width, so it doesn't
+   jitter as it changes. */
+.score-figure {
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+/* Smaller and muted, so the number Found stands out. A hair of space keeps its slash off the heavier
+   digit before it. */
+.score-total {
+  margin-left: 0.04em;
+  font-size: 0.6em;
+  font-weight: 500;
+  color: var(--ink-muted);
+}
+
+/* A label over a figure or value, such as SCORE or TIME. */
+.small-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
 .page {
   box-sizing: border-box;
   max-width: 48rem;
@@ -136,13 +176,18 @@ body,
 
 .app-title {
   margin: 0 0 2rem;
-  font-size: 2.5rem;
+  font-size: 3rem;
   letter-spacing: -0.02em;
+}
+
+.page-heading,
+.quiz-title {
+  font-size: 1.375rem;
+  line-height: 1.2;
 }
 
 .page-heading {
   margin: 0 0 1.5rem;
-  font-size: 1.5rem;
 }
 
 .quiz-list {
@@ -403,16 +448,14 @@ body,
   box-shadow: 0 0 0 1px var(--ink);
 }
 
-.score {
-  font-size: 1.25rem;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
+.attempt-bar .score-figure {
+  font-size: 1.75rem;
 }
 
 .clock {
   font-size: 1.25rem;
   color: var(--ink-muted);
-  font-variant-numeric: tabular-nums;
+  font-variant-numeric: tabular-nums lining-nums;
 }
 
 .unfound-highlight-button {
@@ -438,7 +481,7 @@ body,
 
 .pause-title {
   margin: 0;
-  font-size: 2rem;
+  font-size: 3.25rem;
 }
 
 .pause-stats {
@@ -448,16 +491,19 @@ body,
   text-align: center;
 }
 
-.pause-stats dt {
-  font-size: 0.875rem;
-  color: var(--ink-muted);
+/* The clock's line is as tall as the Score's, so the two figures sit level. */
+.pause-stats dd {
+  margin: 0.35rem 0 0;
+  line-height: 2.5rem;
 }
 
-.pause-stats dd {
-  margin: 0;
-  font-size: 1.75rem;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
+.pause-stats .score-figure {
+  font-size: 2.5rem;
+}
+
+.pause-clock {
+  font-size: 2rem;
+  font-variant-numeric: tabular-nums lining-nums;
 }
 
 .pause-actions {
@@ -485,13 +531,11 @@ body,
 
 .results-quiz {
   margin: 0;
-  font-size: 0.875rem;
-  color: var(--ink-muted);
 }
 
 .results-ending {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 1.75rem;
 }
 
 .results-stats {
@@ -500,16 +544,15 @@ body,
   margin: 0;
 }
 
-.results-stats dt {
-  font-size: 0.875rem;
-  color: var(--ink-muted);
-}
-
 .results-stats dd {
   margin: 0;
   font-size: 1.25rem;
   font-weight: 600;
-  font-variant-numeric: tabular-nums;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.results-stats .score-figure {
+  font-size: 2.25rem;
 }
 
 .new-best {
