@@ -1,34 +1,19 @@
-import { geoGraticule10, geoNaturalEarth1, geoPath } from 'd3-geo'
-import type { GeoPermissibleObjects } from 'd3-geo'
+import type { GeoPath } from 'd3-geo'
 import { select } from 'd3-selection'
 import 'd3-transition' // adds selection.transition(), which animates the reset
 import { type D3ZoomEvent, type ZoomBehavior, zoom, zoomIdentity } from 'd3-zoom'
 import type { Polygon } from 'geojson'
 import { type PointerEvent, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
-import type { Place } from '../quiz/quiz.ts'
+import type { MapId, Place } from '../quiz/quiz.ts'
+import { type MapDefinition, type MapFrame, maps } from './maps.ts'
 import { type MapShape, fetchMapShapes } from './mapShapes.ts'
 
-const WIDTH = 960
-const SPHERE: GeoPermissibleObjects = { type: 'Sphere' }
 const MAX_ZOOM = 40
-// A marker's radius at full-world zoom. Markers keep this size on screen as the map zooms.
+// A marker's radius at full-map zoom. Markers keep this size on screen as the map zooms.
 const MARKER_RADIUS = 2.5
-// A Country is too small to see at full-world zoom, so it gets a marker, when its largest piece
-// of land covers less than this area of the map (about a 3 × 3 pixel square on a laptop screen).
+// A Place is too small to see at full-map zoom, so it gets a marker, when its largest piece of land
+// covers less than this area of the map (about a 3 × 3 pixel square on a laptop screen).
 const MIN_VISIBLE_AREA = 5
-
-// Room around the world oval, so its outline isn't cut off where the oval meets the map's edge.
-const OVAL_MARGIN = 1
-
-const projection = geoNaturalEarth1().fitWidth(WIDTH - 2 * OVAL_MARGIN, SPHERE)
-const [translateX, translateY] = projection.translate()
-projection.translate([translateX + OVAL_MARGIN, translateY + OVAL_MARGIN])
-const path = geoPath(projection)
-const HEIGHT = Math.ceil(path.bounds(SPHERE)[1][1] + OVAL_MARGIN)
-
-const spherePath = path(SPHERE) ?? ''
-// A latitude/longitude line every 10°, so the map reads as an atlas.
-const gridPath = path(geoGraticule10()) ?? ''
 
 interface Marker {
   id: string
@@ -36,22 +21,25 @@ interface Marker {
   y: number
 }
 
-// Every shape's outline and marker. The projection never changes, so they are computed once, when
-// the map data arrives.
+// The map's frame, and every shape's outline and marker. The projection never changes, so they are
+// computed once, when the map data arrives.
 interface MapGeometry {
+  frame: MapFrame
   shapePaths: { id: string; d: string }[]
   shapePathsById: ReadonlyMap<string, string>
   markers: Marker[]
   markersById: ReadonlyMap<string, Marker>
 }
 
-function geometryOf(shapes: MapShape[]): MapGeometry {
-  const shapePaths = shapes.map((shape) => ({ id: shape.id, d: path(shape) ?? '' }))
+function geometryOf(definition: MapDefinition, shapes: MapShape[]): MapGeometry {
+  const frame = definition.frame(shapes)
+  const shapePaths = shapes.map((shape) => ({ id: shape.id, d: frame.path(shape) ?? '' }))
   const markers = shapes.flatMap((shape) => {
-    const position = markerPosition(shape)
+    const position = markerPosition(shape, frame.path)
     return position ? [{ id: shape.id, x: position[0], y: position[1] }] : []
   })
   return {
+    frame,
     shapePaths,
     shapePathsById: new Map(shapePaths.map(({ id, d }) => [id, d])),
     markers,
@@ -59,35 +47,58 @@ function geometryOf(shapes: MapShape[]): MapGeometry {
   }
 }
 
-// The map's geometry once it has loaded, or null if its data couldn't be fetched; undefined until then.
-let loadedGeometry: MapGeometry | null | undefined
-let loadStarted = false
-const loadListeners = new Set<() => void>()
-
-// Starts loading the map, unless it already has. The app calls this as it starts, so the map is
-// normally ready before the player starts an Attempt.
-export function loadWorldMap() {
-  if (loadStarted) return
-  loadStarted = true
-  fetchMapShapes()
-    .then(geometryOf)
-    .catch(() => null)
-    .then((geometry) => {
-      loadedGeometry = geometry
-      for (const listener of loadListeners) listener()
-    })
+// Loads one map's data, once, and tells its subscribers when it has.
+interface MapLoader {
+  // The map's geometry once it has loaded, or null if its data couldn't be fetched; undefined until then.
+  geometry(): MapGeometry | null | undefined
+  subscribe(listener: () => void): () => void
+  // Starts loading the map, unless it already has.
+  load(): void
 }
 
-function subscribeToLoad(listener: () => void) {
-  loadListeners.add(listener)
-  loadWorldMap()
-  return () => {
-    loadListeners.delete(listener)
+function mapLoader(definition: MapDefinition): MapLoader {
+  let geometry: MapGeometry | null | undefined
+  let loadStarted = false
+  const listeners = new Set<() => void>()
+
+  function load() {
+    if (loadStarted) return
+    loadStarted = true
+    fetchMapShapes(definition.dataUrl)
+      .then((shapes) => geometryOf(definition, shapes))
+      .catch(() => null)
+      .then((loaded) => {
+        geometry = loaded
+        for (const listener of listeners) listener()
+      })
+  }
+
+  return {
+    geometry: () => geometry,
+    subscribe(listener) {
+      listeners.add(listener)
+      load()
+      return () => {
+        listeners.delete(listener)
+      }
+    },
+    load,
   }
 }
 
+const mapLoaders: Record<MapId, MapLoader> = {
+  world: mapLoader(maps.world),
+  'us-states': mapLoader(maps['us-states']),
+}
+
+// Starts loading every map. The app calls this as it starts, so the map is normally ready before the
+// player starts an Attempt.
+export function loadMaps() {
+  for (const loader of Object.values(mapLoaders)) loader.load()
+}
+
 // The middle of the shape's largest piece of land, if even that is too small to see.
-function markerPosition(shape: MapShape): [number, number] | undefined {
+function markerPosition(shape: MapShape, path: GeoPath): [number, number] | undefined {
   const pieces: Polygon[] =
     shape.geometry.type === 'Polygon'
       ? [shape.geometry]
@@ -96,26 +107,28 @@ function markerPosition(shape: MapShape): [number, number] | undefined {
   return path.area(largest) < MIN_VISIBLE_AREA ? path.centroid(largest) : undefined
 }
 
-// A Country to draw the eye to briefly. Each new sequence number replays the animation, even for
-// the same Country.
-export interface Cue {
+// A Place to draw the eye to briefly. Each new sequence number replays the animation, even for the
+// same Place.
+export interface ShapeAnimation {
   id: string
   sequence: number
 }
 
-interface WorldMapProps {
-  countries: readonly Place[]
+interface QuizMapProps {
+  // The map the Quiz is played on.
+  map: MapId
+  places: readonly Place[]
   foundIds: ReadonlySet<string>
-  // Countries to Reveal as Missed, once an Attempt has ended.
+  // Places to Reveal as Missed, once an Attempt has ended.
   missedIds: ReadonlySet<string> | null
-  // Which Countries show their name on hover: only Found ones during an Attempt, or all of them.
+  // Which Places show their name on hover: only Found ones during an Attempt, or all of them.
   // Territories never do.
   tooltips: 'found' | 'all'
-  // A newly Found Country, to pulse.
-  pulse: Cue | null
-  // An already-Found Country, to flash.
-  flash: Cue | null
-  // Whether the Unfound Highlight is on, marking where every Unfound Country is without naming any.
+  // A newly Found Place, to pulse.
+  pulse: ShapeAnimation | null
+  // An already-Found Place, to flash.
+  flash: ShapeAnimation | null
+  // Whether the Unfound Highlight is on, marking where every Unfound Place is without naming any.
   unfoundHighlight: boolean
 }
 
@@ -125,28 +138,30 @@ interface Hover {
   y: number
 }
 
-export function WorldMap(props: WorldMapProps) {
-  const geometry = useSyncExternalStore(subscribeToLoad, () => loadedGeometry)
+export function QuizMap(props: QuizMapProps) {
+  const loader = mapLoaders[props.map]
+  const geometry = useSyncExternalStore(loader.subscribe, loader.geometry)
   if (geometry === undefined) return <MapMessage>Loading the map…</MapMessage>
   if (geometry === null) return <MapMessage>The map couldn't load. Reload the page to try again.</MapMessage>
-  return <LoadedWorldMap {...props} geometry={geometry} />
+  return <LoadedQuizMap {...props} geometry={geometry} />
 }
 
 // Stands in the map's place while it loads, or if it can't.
 function MapMessage({ children }: { children: string }) {
   return (
-    <div className="world-map">
+    <div className="quiz-map">
       <p className="map-message">{children}</p>
     </div>
   )
 }
 
-interface LoadedWorldMapProps extends WorldMapProps {
+interface LoadedQuizMapProps extends QuizMapProps {
   geometry: MapGeometry
 }
 
-function LoadedWorldMap({
-  countries,
+function LoadedQuizMap({
+  map,
+  places,
   foundIds,
   missedIds,
   tooltips,
@@ -154,15 +169,16 @@ function LoadedWorldMap({
   flash,
   unfoundHighlight,
   geometry,
-}: LoadedWorldMapProps) {
+}: LoadedQuizMapProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const svgRef = useRef<SVGSVGElement>(null)
   const zoomRef = useRef<ZoomBehavior<SVGSVGElement, unknown>>(null)
   const [transform, setTransform] = useState(zoomIdentity)
   const [hover, setHover] = useState<Hover | null>(null)
+  const { width, height, oval } = geometry.frame
 
-  const countryIds = useMemo(() => new Set(countries.map((place) => place.id)), [countries])
-  const namesById = useMemo(() => new Map(countries.map((place) => [place.id, place.name])), [countries])
+  const placeIds = useMemo(() => new Set(places.map((place) => place.id)), [places])
+  const hoverTextsById = useMemo(() => new Map(places.map((place) => [place.id, hoverText(place)])), [places])
 
   useEffect(() => {
     const svg = select(svgRef.current!)
@@ -170,12 +186,12 @@ function LoadedWorldMap({
       .scaleExtent([1, MAX_ZOOM])
       .translateExtent([
         [0, 0],
-        [WIDTH, HEIGHT],
+        [width, height],
       ])
       .on('zoom', (event: D3ZoomEvent<SVGSVGElement, unknown>) => {
         setTransform(event.transform)
         // A wheel zoom or the reset moves the map out from under a still pointer, so the tooltip
-        // hides until the pointer moves again. A drag carries the hovered Country along with it.
+        // hides until the pointer moves again. A drag carries the hovered Place along with it.
         if (event.sourceEvent?.type !== 'mousemove') setHover(null)
       })
     svg.call(behavior)
@@ -183,7 +199,7 @@ function LoadedWorldMap({
     return () => {
       svg.on('.zoom', null)
     }
-  }, [])
+  }, [width, height])
 
   const hoverAt = useCallback((id: string, event: PointerEvent) => {
     const bounds = containerRef.current!.getBoundingClientRect()
@@ -191,27 +207,27 @@ function LoadedWorldMap({
   }, [])
   const endHover = useCallback(() => setHover(null), [])
 
-  // Re-rendered only when the Found or Missed Countries change, not on every zoom or pointer move.
+  // Re-rendered only when the Found or Missed Places change, not on every zoom or pointer move.
   const shapeElements = useMemo(
     () =>
       geometry.shapePaths.map(({ id, d }) => (
         <path
           key={id}
           d={d}
-          className={shapeClass(id, countryIds, foundIds, missedIds)}
+          className={shapeClass(id, placeIds, foundIds, missedIds)}
           onPointerMove={(event) => hoverAt(id, event)}
           onPointerLeave={endHover}
         />
       )),
-    [geometry, countryIds, foundIds, missedIds, hoverAt, endHover],
+    [geometry, placeIds, foundIds, missedIds, hoverAt, endHover],
   )
 
   const markerRadius = MARKER_RADIUS / transform.k
-  const hoveredName =
-    hover && (tooltips === 'all' || foundIds.has(hover.id)) ? namesById.get(hover.id) : undefined
+  const hoveredText =
+    hover && (tooltips === 'all' || foundIds.has(hover.id)) ? hoverTextsById.get(hover.id) : undefined
   // The Unfound Highlight is styled from a class on the whole map, so toggling it doesn't rebuild
-  // the Country shapes.
-  const mapClassName = unfoundHighlight ? 'world-map unfound-highlight' : 'world-map'
+  // the Place shapes.
+  const mapClassName = unfoundHighlight ? 'quiz-map unfound-highlight' : 'quiz-map'
 
   function resetView() {
     select(svgRef.current!).transition().duration(600).call(zoomRef.current!.transform, zoomIdentity)
@@ -221,26 +237,30 @@ function LoadedWorldMap({
   // zooms, pans and resets the view. They're caught on the way down, as d3-zoom stops them bubbling.
   return (
     <div ref={containerRef} className={mapClassName} onMouseDownCapture={(event) => event.preventDefault()}>
-      <svg ref={svgRef} viewBox={`0 0 ${WIDTH} ${HEIGHT}`} role="img" aria-label="World map">
+      <svg ref={svgRef} viewBox={`0 0 ${width} ${height}`} role="img" aria-label={maps[map].name}>
         <g transform={transform.toString()}>
-          <path className="sphere" d={spherePath} />
-          <path className="grid" d={gridPath} />
+          {oval && (
+            <>
+              <path className="sphere" d={oval.outline} />
+              <path className="grid" d={oval.grid} />
+            </>
+          )}
           {shapeElements}
           {geometry.markers
-            .filter(({ id }) => countryIds.has(id))
+            .filter(({ id }) => placeIds.has(id))
             .map(({ id, x, y }) => (
               <circle
                 key={id}
                 cx={x}
                 cy={y}
                 r={markerRadius}
-                className={`${shapeClass(id, countryIds, foundIds, missedIds)} marker`}
+                className={`${shapeClass(id, placeIds, foundIds, missedIds)} marker`}
                 onPointerMove={(event) => hoverAt(id, event)}
                 onPointerLeave={endHover}
               />
             ))}
           {/* The world oval's edge, over the land that meets it, such as Antarctica. */}
-          <path className="oval-outline" d={spherePath} />
+          {oval && <path className="oval-outline" d={oval.outline} />}
           {/* Overlays are drawn on top of every shape so their outlines aren't hidden by
               neighbours'; the keys remount them so their animations replay. */}
           {flash && (
@@ -261,14 +281,14 @@ function LoadedWorldMap({
               markerRadius={markerRadius}
             />
           )}
-          {hover && hoveredName && (
+          {hover && hoveredText && (
             <Overlay kind="hovered" id={hover.id} geometry={geometry} markerRadius={markerRadius} />
           )}
         </g>
       </svg>
-      {hover && hoveredName && (
+      {hover && hoveredText && (
         <div className="map-tooltip" style={{ left: hover.x, top: hover.y }}>
-          {hoveredName}
+          {hoveredText}
         </div>
       )}
       <button type="button" className="secondary-button frosted-panel reset-view" onClick={resetView}>
@@ -278,6 +298,11 @@ function LoadedWorldMap({
   )
 }
 
+// What hovering a Place shows: its name, and its prompt if it has one ("Sacramento, California").
+function hoverText(place: Place): string {
+  return place.prompt ? `${place.name}, ${place.prompt}` : place.name
+}
+
 interface OverlayProps {
   kind: 'flash' | 'pulse' | 'hovered'
   id: string
@@ -285,7 +310,7 @@ interface OverlayProps {
   markerRadius: number
 }
 
-// A Country's whole shape, overseas parts included, and its marker if it has one.
+// The whole shape a Place is joined to, overseas parts included, and its marker if it has one.
 function Overlay({ kind, id, geometry, markerRadius }: OverlayProps) {
   const marker = geometry.markersById.get(id)
   return (
@@ -298,11 +323,11 @@ function Overlay({ kind, id, geometry, markerRadius }: OverlayProps) {
 
 function shapeClass(
   id: string,
-  countryIds: ReadonlySet<string>,
+  placeIds: ReadonlySet<string>,
   foundIds: ReadonlySet<string>,
   missedIds: ReadonlySet<string> | null,
 ) {
-  if (!countryIds.has(id)) return 'territory'
-  if (foundIds.has(id)) return 'country found'
-  return missedIds?.has(id) ? 'country missed' : 'country'
+  if (!placeIds.has(id)) return 'territory'
+  if (foundIds.has(id)) return 'place found'
+  return missedIds?.has(id) ? 'place missed' : 'place'
 }

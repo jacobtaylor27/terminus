@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import type { EndedAttemptState, Ending } from '../attempt/attempt.ts'
-import { WorldMap } from '../map/WorldMap.tsx'
+import { QuizMap } from '../map/QuizMap.tsx'
 import type { Quiz } from '../quiz/quiz.ts'
 import { formatTimerTime, formatTimeTaken } from './formatDuration.ts'
 import { ScoreFigure } from './ScoreFigure.tsx'
@@ -40,8 +40,9 @@ export function ResultsScreen({ quiz, finalState, newBest, onPlayAgain, onBack }
           Play again
         </button>
       </header>
-      <WorldMap
-        countries={quiz.places}
+      <QuizMap
+        map={quiz.map}
+        places={quiz.places}
         foundIds={foundIds}
         missedIds={missedIds}
         tooltips="all"

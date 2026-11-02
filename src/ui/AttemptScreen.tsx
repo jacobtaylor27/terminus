@@ -6,7 +6,7 @@ import {
   startAttempt,
   type TimerSetting,
 } from '../attempt/attempt.ts'
-import { type Cue, WorldMap } from '../map/WorldMap.tsx'
+import { QuizMap, type ShapeAnimation } from '../map/QuizMap.tsx'
 import type { Mode, Quiz } from '../quiz/quiz.ts'
 import { formatDuration, formatTimerTime } from './formatDuration.ts'
 import { ScoreFigure } from './ScoreFigure.tsx'
@@ -28,8 +28,8 @@ export function AttemptScreen({ quiz, mode, timer, onEnd }: AttemptScreenProps) 
   // Kept apart from the rest of the state, so ticking doesn't rebuild the map's Found set.
   const [clockText, setClockText] = useState(() => formatClock(state))
   const [answer, setAnswer] = useState('')
-  const [pulse, setPulse] = useState<Cue | null>(null)
-  const [flash, setFlash] = useState<Cue | null>(null)
+  const [pulse, setPulse] = useState<ShapeAnimation | null>(null)
+  const [flash, setFlash] = useState<ShapeAnimation | null>(null)
   // The Unfound Highlight is only a way of looking at the map, so the Attempt never knows of it.
   const [unfoundHighlight, setUnfoundHighlight] = useState(false)
   const answerBoxRef = useRef<HTMLInputElement>(null)
@@ -78,12 +78,12 @@ export function AttemptScreen({ quiz, mode, timer, onEnd }: AttemptScreenProps) 
     const result = attempt.inputChanged(text)
     if (result.kind === 'accepted') {
       setAnswer('')
-      setPulse(nextCue(result.place.id))
+      setPulse(nextAnimation(result.place.id))
       showLatest()
       return
     }
     setAnswer(text)
-    if (result.kind === 'already-found') setFlash(nextCue(result.place.id))
+    if (result.kind === 'already-found') setFlash(nextAnimation(result.place.id))
   }
 
   function handleAnswerKeyDown(event: KeyboardEvent<HTMLInputElement>) {
@@ -165,8 +165,9 @@ export function AttemptScreen({ quiz, mode, timer, onEnd }: AttemptScreenProps) 
             Pause
           </button>
         </div>
-        <WorldMap
-          countries={quiz.places}
+        <QuizMap
+          map={quiz.map}
+          places={quiz.places}
           foundIds={foundIds}
           missedIds={null}
           tooltips="found"
@@ -214,7 +215,7 @@ function formatClock(state: AttemptState): string {
     : formatDuration(state.elapsedMs)
 }
 
-// Cues the Country with the next sequence number, so its animation replays.
-function nextCue(id: string) {
-  return (previous: Cue | null): Cue => ({ id, sequence: (previous?.sequence ?? 0) + 1 })
+// The Place's next animation: the same Place with the next sequence number, so its animation replays.
+function nextAnimation(id: string) {
+  return (previous: ShapeAnimation | null): ShapeAnimation => ({ id, sequence: (previous?.sequence ?? 0) + 1 })
 }

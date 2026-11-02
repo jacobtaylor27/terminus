@@ -26,7 +26,7 @@ interface Progress {
 
 export type AttemptState =
   | (Progress & { status: 'in-progress' | 'paused' })
-  // Once the Attempt has ended, the Countries still Unfound are Missed.
+  // Once the Attempt has ended, the Places still Unfound are Missed.
   | (Progress & { status: Ending; missed: Place[] })
 
 export type EndedAttemptState = Extract<AttemptState, { status: Ending }>
@@ -125,7 +125,7 @@ export function startAttempt(
         return { kind: 'wrong-guess' }
       }
       if (found.has(place)) return { kind: 'already-found', place }
-      // An Unfound Country is accepted as soon as it is typed, so it never reaches Enter.
+      // An Unfound Place is accepted as soon as it is typed, so it never reaches Enter.
       return { kind: 'nothing' }
     },
 

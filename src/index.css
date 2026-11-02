@@ -4,8 +4,8 @@
   --ink: #121820; /* text, and every control's fill or outline */
   --ink-muted: #4f5966; /* secondary text and small labels */
   --paper: #fcfbf8; /* the page, panels and the Pause overlay */
-  --land: #f4f1ea; /* a Country's fill */
-  --land-edge: #8f979f; /* borders between Countries */
+  --land: #f4f1ea; /* a Country's or State's fill */
+  --land-edge: #8f979f; /* borders between Countries or States */
   --sea: #cfe0ec; /* the sphere */
   --territory: #dedbd3; /* a warm grey close to the land, so Territories never look like answers */
   --found: #1f6a6c; /* muted teal */
@@ -438,14 +438,15 @@ body,
 }
 
 /* The map fills the window, and the panels float over it in the empty corners around the world
-   oval. Its own stacking context keeps the panels over the map but under the Pause overlay. */
+   oval or the States. Its own stacking context keeps the panels over the map but under the Pause
+   overlay. */
 .attempt-play {
   position: relative;
   isolation: isolate;
   height: 100%;
 }
 
-.attempt-play .world-map {
+.attempt-play .quiz-map {
   position: absolute;
   inset: 0;
 }
@@ -456,7 +457,7 @@ body,
   box-sizing: border-box;
 }
 
-/* The answer box, at the bottom centre over Antarctica. */
+/* The answer box, at the bottom centre: over Antarctica, or under Texas. */
 .answer-panel {
   bottom: 1rem;
   left: 50%;
@@ -550,7 +551,7 @@ body,
 }
 
 /* Up to 720 px wide, the panels would cover land, so they become opaque strips along the top and
-   bottom edges, outside the oval, and the map shrinks to fit between them. */
+   bottom edges, outside the map, and the map shrinks to fit between them. */
 @media (max-width: 720px) {
   .attempt-play {
     display: grid;
@@ -560,7 +561,7 @@ body,
       'answer answer' auto / 1fr auto;
   }
 
-  .attempt-play .world-map {
+  .attempt-play .quiz-map {
     position: relative;
     inset: auto;
     grid-area: map;
@@ -838,13 +839,13 @@ body,
   }
 }
 
-.world-map {
+.quiz-map {
   position: relative;
   flex: 1;
   min-height: 0;
 }
 
-.world-map svg {
+.quiz-map svg {
   display: block;
   width: 100%;
   height: 100%;
@@ -852,86 +853,86 @@ body,
   touch-action: none;
 }
 
-.world-map .sphere {
+.quiz-map .sphere {
   fill: var(--sea);
 }
 
 /* The grid and the oval's outline are hairlines at every zoom, and never catch the pointer. */
-.world-map .grid,
-.world-map .oval-outline {
+.quiz-map .grid,
+.quiz-map .oval-outline {
   fill: none;
   vector-effect: non-scaling-stroke;
   pointer-events: none;
 }
 
-.world-map .grid {
+.quiz-map .grid {
   stroke: var(--grid);
   stroke-width: 0.75px;
 }
 
-.world-map .oval-outline {
+.quiz-map .oval-outline {
   stroke: var(--ink);
   stroke-width: 1px;
 }
 
-.world-map .country,
-.world-map .territory {
+.quiz-map .place,
+.quiz-map .territory {
   stroke: var(--land-edge);
   stroke-width: 0.5px;
   stroke-linejoin: round;
   vector-effect: non-scaling-stroke;
 }
 
-.world-map .country {
+.quiz-map .place {
   fill: var(--land);
 }
 
-.world-map .country.found {
+.quiz-map .place.found {
   fill: var(--found);
 }
 
-.world-map .country.missed {
+.quiz-map .place.missed {
   fill: var(--missed);
 }
 
-.world-map .territory {
+.quiz-map .territory {
   fill: var(--territory);
   pointer-events: none;
 }
 
-.world-map .marker {
+.quiz-map .marker {
   stroke: var(--land-marker);
   stroke-width: 1px;
 }
 
-.world-map .marker.found {
+.quiz-map .marker.found {
   stroke: var(--found-marker);
 }
 
-.world-map .marker.missed {
+.quiz-map .marker.missed {
   stroke: var(--missed-marker);
 }
 
-.world-map.unfound-highlight .country:not(.found) {
+.quiz-map.unfound-highlight .place:not(.found) {
   fill: var(--ochre);
 }
 
-.world-map.unfound-highlight .marker:not(.found) {
+.quiz-map.unfound-highlight .marker:not(.found) {
   stroke: var(--ochre-marker);
   stroke-width: 2.5px;
 }
 
-.world-map .overlay {
+.quiz-map .overlay {
   stroke-linejoin: round;
   pointer-events: none;
 }
 
-.world-map .overlay > * {
+.quiz-map .overlay > * {
   vector-effect: non-scaling-stroke;
 }
 
 /* Already Found: an ink outline that blinks twice, so it never reads as the Unfound Highlight. */
-.world-map .flash {
+.quiz-map .flash {
   fill: none;
   stroke: var(--ink);
   stroke-width: 2.5px;
@@ -957,7 +958,7 @@ body,
   }
 }
 
-.world-map .pulse {
+.quiz-map .pulse {
   fill: var(--found-tint);
   stroke: var(--found-tint);
   animation: pulse 0.7s ease-out 2 forwards;
@@ -976,7 +977,7 @@ body,
   }
 }
 
-.world-map .hovered {
+.quiz-map .hovered {
   fill: none;
   stroke: var(--ink);
   stroke-width: 1.5px;
@@ -996,7 +997,7 @@ body,
   pointer-events: none;
 }
 
-.world-map .reset-view {
+.quiz-map .reset-view {
   position: absolute;
   right: 1rem;
   bottom: 1rem;

@@ -157,6 +157,7 @@ describe('Personal Best', () => {
       id: 'capitals-of-africa',
       title: 'Capitals of Africa',
       modes: ['free-recall'],
+      map: 'world',
       places: [
         { id: 'KEN', name: 'Nairobi' },
         { id: 'GHA', name: 'Accra' },

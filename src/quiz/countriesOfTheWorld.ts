@@ -8,6 +8,7 @@ export const countriesOfTheWorld: Quiz = {
   id: 'countries-of-the-world',
   title: 'Countries of the World',
   modes: ['free-recall'],
+  map: 'world',
   places: [
     // The 193 UN member states
     { id: 'AFG', name: 'Afghanistan' },
