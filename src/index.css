@@ -61,6 +61,40 @@ body,
   border-color: #2f6fbf;
 }
 
+.quiz-bests {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.25rem 1rem;
+  align-self: stretch;
+  margin-top: auto;
+  padding-top: 1rem;
+  font-size: 0.875rem;
+  font-weight: 400;
+}
+
+.quiz-bests-label,
+.quiz-best-result.none {
+  color: #5f676f;
+}
+
+.quiz-bests-label {
+  grid-column: 1 / -1;
+}
+
+.quiz-best {
+  display: contents;
+}
+
+.quiz-best-result {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.quiz-best-result.none {
+  font-weight: 400;
+}
+
 .back-button {
   margin: 0 0 1.5rem;
   padding: 0.25rem 0;
@@ -409,6 +443,16 @@ body,
   font-size: 1.25rem;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
+}
+
+.new-best {
+  margin: 0;
+  padding: 0.25rem 0.75rem;
+  font-weight: 600;
+  color: #7a4f0e;
+  background: #fdf1d3;
+  border: 1px solid #f2b632;
+  border-radius: 999px;
 }
 
 .map-legend {

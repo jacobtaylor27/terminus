@@ -32,6 +32,9 @@ export function AttemptScreen({ quiz, mode, timer, onEnd }: AttemptScreenProps) 
   // The Unfound Highlight is only a way of looking at the map, so the Attempt never knows of it.
   const [unfoundHighlight, setUnfoundHighlight] = useState(false)
   const answerBoxRef = useRef<HTMLInputElement>(null)
+  // A tick and the player can both find the Attempt ended before the Results show, so the end is
+  // reported only the first time, and the Attempt saved only once.
+  const endReported = useRef(false)
   const paused = state.status === 'paused'
   const clockLabel = state.timer ? 'Time left' : 'Time'
 
@@ -47,17 +50,23 @@ export function AttemptScreen({ quiz, mode, timer, onEnd }: AttemptScreenProps) 
     const ticker = setInterval(() => {
       const latest = attempt.state()
       // A Timer runs out between answers, so it's a tick that finds the Attempt ended as Time's up.
-      if (hasEnded(latest)) onEnd(latest)
+      if (hasEnded(latest)) reportEnd(latest)
       else setClockText(formatClock(latest))
     }, TICK_MS)
     return () => clearInterval(ticker)
   }, [attempt, onEnd])
 
+  function reportEnd(finalState: EndedAttemptState) {
+    if (endReported.current) return
+    endReported.current = true
+    onEnd(finalState)
+  }
+
   // Shows the Attempt's latest state, or its Results once it has ended.
   function showLatest() {
     const latest = attempt.state()
     if (hasEnded(latest)) {
-      onEnd(latest)
+      reportEnd(latest)
       return
     }
     setState(latest)

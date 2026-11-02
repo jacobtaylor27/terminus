@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import type { EndedAttemptState, Ending } from '../attempt/attempt.ts'
 import { WorldMap } from '../map/WorldMap.tsx'
 import type { Quiz } from '../quiz/quiz.ts'
-import { formatDuration, formatTimerTime } from './formatDuration.ts'
+import { formatTimerTime, formatTimeTaken } from './formatDuration.ts'
 
 // How each way an Attempt can end is announced on the Results screen.
 const endingTitles: Record<Ending, string> = {
@@ -14,15 +14,15 @@ const endingTitles: Record<Ending, string> = {
 interface ResultsScreenProps {
   quiz: Quiz
   finalState: EndedAttemptState
+  // Whether the Attempt set a new Personal Best for its Quiz, Mode and Timer setting.
+  newBest: boolean
   onPlayAgain: () => void
   onBack: () => void
 }
 
-export function ResultsScreen({ quiz, finalState, onPlayAgain, onBack }: ResultsScreenProps) {
+export function ResultsScreen({ quiz, finalState, newBest, onPlayAgain, onBack }: ResultsScreenProps) {
   const foundIds = useMemo(() => new Set(finalState.found.map((place) => place.id)), [finalState])
   const missedIds = useMemo(() => new Set(finalState.missed.map((place) => place.id)), [finalState])
-  // Times under a Timer are shown in minutes alone, like its countdown, so a full 60:00 isn't 1:00:00.
-  const formatTime = finalState.timer ? formatTimerTime : formatDuration
 
   return (
     <div className="results-screen">
@@ -40,13 +40,14 @@ export function ResultsScreen({ quiz, finalState, onPlayAgain, onBack }: Results
           </div>
           <div>
             <dt>Time</dt>
-            <dd>{formatTime(finalState.elapsedMs)}</dd>
+            <dd>{formatTimeTaken(finalState.elapsedMs, finalState.timer !== null)}</dd>
           </div>
           <div>
             <dt>Timer</dt>
             <dd>{finalState.timer ? formatTimerTime(finalState.timer.durationMs) : 'Off'}</dd>
           </div>
         </dl>
+        {newBest && <p className="new-best">New best!</p>}
         <ul className="map-legend">
           <li className="found">Found</li>
           <li className="missed">Missed</li>

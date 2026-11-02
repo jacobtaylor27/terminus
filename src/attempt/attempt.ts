@@ -7,6 +7,9 @@ export type Clock = () => number
 // The Timer an Attempt is played against: its duration in milliseconds, or null to play without one.
 export type TimerSetting = number | null
 
+// The Timer's duration unless the player sets another before the Attempt starts: 15:00.
+export const DEFAULT_TIMER_MS = 15 * 60_000
+
 // How an Attempt ended.
 export type Ending = 'completed' | 'times-up' | 'gave-up'
 

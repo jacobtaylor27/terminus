@@ -1,10 +1,10 @@
 import { type FormEvent, useState } from 'react'
-import type { TimerSetting } from '../attempt/attempt.ts'
+import { DEFAULT_TIMER_MS, type TimerSetting } from '../attempt/attempt.ts'
 import { type Mode, modeDetails, type Quiz } from '../quiz/quiz.ts'
 import { formatTimerTime } from './formatDuration.ts'
 
 // The Timer is set in whole minutes: 15:00 unless the player changes it, from 1:00 to 60:00.
-const DEFAULT_TIMER_MINUTES = 15
+const DEFAULT_TIMER_MINUTES = DEFAULT_TIMER_MS / 60_000
 const MIN_TIMER_MINUTES = 1
 const MAX_TIMER_MINUTES = 60
 

@@ -1,11 +1,19 @@
-import type { Quiz } from '../quiz/quiz.ts'
+import { DEFAULT_TIMER_MS, type TimerSetting } from '../attempt/attempt.ts'
+import { type Mode, modeDetails, type Quiz } from '../quiz/quiz.ts'
+import type { Records } from '../records/records.ts'
+import { formatTimerTime, formatTimeTaken } from './formatDuration.ts'
+
+// The Timer settings whose Personal Bests a Quiz card shows: untimed, and the Timer the setup screen
+// starts on. Those for other Timers are kept too, but would crowd the card.
+const CARD_TIMERS: readonly TimerSetting[] = [null, DEFAULT_TIMER_MS]
 
 interface QuizListScreenProps {
   quizzes: readonly Quiz[]
+  records: Records
   onChoose: (quiz: Quiz) => void
 }
 
-export function QuizListScreen({ quizzes, onChoose }: QuizListScreenProps) {
+export function QuizListScreen({ quizzes, records, onChoose }: QuizListScreenProps) {
   return (
     <main className="page">
       <h1 className="app-title">Terminus</h1>
@@ -14,11 +22,46 @@ export function QuizListScreen({ quizzes, onChoose }: QuizListScreenProps) {
         {quizzes.map((quiz) => (
           <li key={quiz.id}>
             <button type="button" className="quiz-card" onClick={() => onChoose(quiz)}>
-              {quiz.title}
+              <span className="quiz-title">{quiz.title}</span>
+              <PersonalBests quiz={quiz} records={records} />
             </button>
           </li>
         ))}
       </ul>
     </main>
   )
+}
+
+// The Quiz's Personal Best in each of its Modes, untimed and with the default Timer. They sit inside
+// the card's button, so they are laid out in spans, which a button may hold.
+function PersonalBests({ quiz, records }: { quiz: Quiz; records: Records }) {
+  return (
+    <span className="quiz-bests">
+      <span className="quiz-bests-label">Personal Best</span>
+      {quiz.modes.flatMap((mode) =>
+        CARD_TIMERS.map((timerMs) => {
+          const best = records.personalBest(quiz, mode, timerMs)
+          return (
+            <span key={`${mode} ${timerMs}`} className="quiz-best">
+              <span>{settingName(mode, timerMs)}</span>
+              {best ? (
+                <span className="quiz-best-result">
+                  {best.score}/{best.total} in {formatTimeTaken(best.elapsedMs, timerMs !== null)}
+                </span>
+              ) : (
+                // Every finished Attempt sets the Personal Best for its setting if there is none.
+                <span className="quiz-best-result none">Not played yet</span>
+              )}
+            </span>
+          )
+        }),
+      )}
+    </span>
+  )
+}
+
+// The Mode and Timer setting a Personal Best is for: "Free Recall, Timer off" or "Free Recall, 15:00 Timer".
+function settingName(mode: Mode, timerMs: TimerSetting): string {
+  const timer = timerMs === null ? 'Timer off' : `${formatTimerTime(timerMs)} Timer`
+  return `${modeDetails[mode].name}, ${timer}`
 }

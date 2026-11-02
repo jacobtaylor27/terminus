@@ -13,3 +13,9 @@ export function formatTimerTime(ms: number): string {
   const totalSeconds = Math.floor(ms / 1000)
   return `${Math.floor(totalSeconds / 60)}:${String(totalSeconds % 60).padStart(2, '0')}`
 }
+
+// The time an Attempt took. Under a Timer it's shown in minutes alone, like the countdown, so a full
+// 60:00 isn't 1:00:00.
+export function formatTimeTaken(ms: number, timed: boolean): string {
+  return timed ? formatTimerTime(ms) : formatDuration(ms)
+}
