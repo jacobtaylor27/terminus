@@ -45,7 +45,9 @@ In a window narrower than 1024 px, the dock becomes a strip under the map, and t
 
 ## Comments
 
-**2026-11-02, during implementation.** Two changes from the criteria above:
+**2026-11-02, during implementation.** The floating dock was built and then replaced, at the user's request, by two paper bars at every window size. The user found the bars cleaner.
 
-- **A top strip in narrow windows.** At the user's request, below 1024 px the strip above the map has three parts: Back to Quizzes at the left, the Quiz title over the ending in the centre, and Play again at the right. Below 480 px they don't fit side by side, so the two buttons take a row above the heading. The strip under the map has the legend at the left, the Score centred, and the Time and Timer at the right, with the "New best!" badge just right of the Score. Below 600 px, the Score and badge keep the first row and the legend and the Time and Timer move to a second. The wide one-row dock is unchanged.
-- **Reset view sits just above the dock at 1024–1279 px.** At those widths the one-row dock (up to 993 px wide) reaches the bottom-right corner and covered Reset view. From 1280 px up, Reset view stays in its corner.
+- **The bar above the map** has Back to Quizzes at the left, the Quiz title over the ending in the centre, and Play again at the right. Below 480 px the two buttons take a row of their own above the heading.
+- **The bar under the map** has the legend at the left, the Score centred, and the Time and Timer at the right. The "New best!" badge sits just right of the Score. Below 600 px the Score and badge keep the first row, and the legend and the Time and Timer move to a second.
+- **The map** shrinks to fit between the bars, so the bars never cover land. Reset view stays at the map's bottom right. There is no divider, and no frosted panel on this screen.
+- **Trade-off:** in short windows the map is smaller than it was under the floating dock. At 1366×633 the oval is about 965 px wide rather than about 1215 px.

@@ -27,50 +27,19 @@ export function ResultsScreen({ quiz, finalState, newBest, onPlayAgain, onBack }
 
   return (
     <div className="results-screen">
-      {/* Read left to right, over Antarctica, so it covers none of the Reveal. In a narrow window it
-          splits in two: the heading, between Back to Quizzes and Play again, in a strip above the
-          map, and the rest in a strip under it. */}
-      <section className="frosted-panel results-dock" aria-label="Results">
+      {/* The heading, between the way back and the way on. */}
+      <header className="results-bar results-top-bar">
+        <button type="button" className="text-link" onClick={onBack}>
+          Back to Quizzes
+        </button>
         <div className="results-heading">
           <p className="small-label results-quiz">{quiz.title}</p>
           <h1 className="results-ending">{endingTitles[finalState.status]}</h1>
         </div>
-        <div className="results-summary">
-          {/* The figure needs no label to be seen as the Score, but a screen reader is told. */}
-          <p className="results-score">
-            <span className="visually-hidden">Score </span>
-            <ScoreFigure score={finalState.score} total={finalState.total} />
-          </p>
-          <dl className="results-stats">
-            <div>
-              <dt className="small-label">Time</dt>
-              <dd>{formatTimeTaken(finalState.elapsedMs, finalState.timer !== null)}</dd>
-            </div>
-            <div>
-              <dt className="small-label">Timer</dt>
-              <dd>{finalState.timer ? formatTimerTime(finalState.timer.durationMs) : 'Off'}</dd>
-            </div>
-          </dl>
-          {newBest && <p className="new-best">New best!</p>}
-          <ul className="map-legend">
-            <li className="found">
-              Found <span className="legend-count">{finalState.found.length}</span>
-            </li>
-            <li className="missed">
-              Missed <span className="legend-count">{finalState.missed.length}</span>
-            </li>
-          </ul>
-        </div>
-        <span className="results-divider" />
-        <div className="results-actions">
-          <button type="button" className="primary-button" onClick={onPlayAgain}>
-            Play again
-          </button>
-          <button type="button" className="text-link" onClick={onBack}>
-            Back to Quizzes
-          </button>
-        </div>
-      </section>
+        <button type="button" className="primary-button" onClick={onPlayAgain}>
+          Play again
+        </button>
+      </header>
       <WorldMap
         countries={quiz.places}
         foundIds={foundIds}
@@ -80,6 +49,32 @@ export function ResultsScreen({ quiz, finalState, newBest, onPlayAgain, onBack }
         flash={null}
         unfoundHighlight={false}
       />
+      <div className="results-bar results-summary">
+        <ul className="map-legend">
+          <li className="found">
+            Found <span className="legend-count">{finalState.found.length}</span>
+          </li>
+          <li className="missed">
+            Missed <span className="legend-count">{finalState.missed.length}</span>
+          </li>
+        </ul>
+        {/* The figure needs no label to be seen as the Score, but a screen reader is told. */}
+        <p className="results-score">
+          <span className="visually-hidden">Score </span>
+          <ScoreFigure score={finalState.score} total={finalState.total} />
+        </p>
+        {newBest && <p className="new-best">New best!</p>}
+        <dl className="results-stats">
+          <div>
+            <dt className="small-label">Time</dt>
+            <dd>{formatTimeTaken(finalState.elapsedMs, finalState.timer !== null)}</dd>
+          </div>
+          <div>
+            <dt className="small-label">Timer</dt>
+            <dd>{finalState.timer ? formatTimerTime(finalState.timer.durationMs) : 'Off'}</dd>
+          </div>
+        </dl>
+      </div>
     </div>
   )
 }
