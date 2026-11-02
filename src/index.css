@@ -617,6 +617,24 @@ body,
   fill: var(--sea);
 }
 
+/* The grid and the oval's outline are hairlines at every zoom, and never catch the pointer. */
+.world-map .grid,
+.world-map .oval-outline {
+  fill: none;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+
+.world-map .grid {
+  stroke: var(--grid);
+  stroke-width: 0.75px;
+}
+
+.world-map .oval-outline {
+  stroke: var(--ink);
+  stroke-width: 1px;
+}
+
 .world-map .country,
 .world-map .territory {
   stroke: var(--land-edge);

@@ -1,4 +1,4 @@
-import { geoNaturalEarth1, geoPath } from 'd3-geo'
+import { geoGraticule10, geoNaturalEarth1, geoPath } from 'd3-geo'
 import type { GeoPermissibleObjects } from 'd3-geo'
 import { select } from 'd3-selection'
 import 'd3-transition' // adds selection.transition(), which animates the reset
@@ -17,11 +17,18 @@ const MARKER_RADIUS = 2.5
 // of land covers less than this area of the map (about a 3 × 3 pixel square on a laptop screen).
 const MIN_VISIBLE_AREA = 5
 
-const projection = geoNaturalEarth1().fitWidth(WIDTH, SPHERE)
+// Room around the world oval, so its outline isn't cut off where the oval meets the map's edge.
+const OVAL_MARGIN = 1
+
+const projection = geoNaturalEarth1().fitWidth(WIDTH - 2 * OVAL_MARGIN, SPHERE)
+const [translateX, translateY] = projection.translate()
+projection.translate([translateX + OVAL_MARGIN, translateY + OVAL_MARGIN])
 const path = geoPath(projection)
-const HEIGHT = Math.ceil(path.bounds(SPHERE)[1][1])
+const HEIGHT = Math.ceil(path.bounds(SPHERE)[1][1] + OVAL_MARGIN)
 
 const spherePath = path(SPHERE) ?? ''
+// A latitude/longitude line every 10°, so the map reads as an atlas.
+const gridPath = path(geoGraticule10()) ?? ''
 
 interface Marker {
   id: string
@@ -217,6 +224,7 @@ function LoadedWorldMap({
       <svg ref={svgRef} viewBox={`0 0 ${WIDTH} ${HEIGHT}`} role="img" aria-label="World map">
         <g transform={transform.toString()}>
           <path className="sphere" d={spherePath} />
+          <path className="grid" d={gridPath} />
           {shapeElements}
           {geometry.markers
             .filter(({ id }) => countryIds.has(id))
@@ -231,6 +239,8 @@ function LoadedWorldMap({
                 onPointerLeave={endHover}
               />
             ))}
+          {/* The world oval's edge, over the land that meets it, such as Antarctica. */}
+          <path className="oval-outline" d={spherePath} />
           {/* Overlays are drawn on top of every shape so their outlines aren't hidden by
               neighbours'; the keys remount them so their animations replay. */}
           {flash && (
