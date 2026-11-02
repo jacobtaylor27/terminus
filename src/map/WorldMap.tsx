@@ -1,4 +1,4 @@
-import { geoNaturalEarth1, geoPath } from 'd3-geo'
+import { geoGraticule10, geoNaturalEarth1, geoPath } from 'd3-geo'
 import type { GeoPermissibleObjects } from 'd3-geo'
 import { select } from 'd3-selection'
 import 'd3-transition' // adds selection.transition(), which animates the reset
@@ -22,6 +22,8 @@ const path = geoPath(projection)
 const HEIGHT = Math.ceil(path.bounds(SPHERE)[1][1])
 
 const spherePath = path(SPHERE) ?? ''
+// PROTOTYPE (quiet atlas): a 10° latitude/longitude grid, drawn over the sea and under the land.
+const graticulePath = path(geoGraticule10()) ?? ''
 
 interface Marker {
   id: string
@@ -110,6 +112,8 @@ interface WorldMapProps {
   flash: Cue | null
   // Whether the Unfound Highlight is on, marking where every Unfound Country is without naming any.
   unfoundHighlight: boolean
+  // PROTOTYPE (quiet atlas): whether to draw the latitude/longitude grid.
+  graticule?: boolean
 }
 
 interface Hover {
@@ -146,6 +150,7 @@ function LoadedWorldMap({
   pulse,
   flash,
   unfoundHighlight,
+  graticule = false,
   geometry,
 }: LoadedWorldMapProps) {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -191,6 +196,7 @@ function LoadedWorldMap({
         <path
           key={id}
           d={d}
+          data-id={id}
           className={shapeClass(id, countryIds, foundIds, missedIds)}
           onPointerMove={(event) => hoverAt(id, event)}
           onPointerLeave={endHover}
@@ -217,6 +223,7 @@ function LoadedWorldMap({
       <svg ref={svgRef} viewBox={`0 0 ${WIDTH} ${HEIGHT}`} role="img" aria-label="World map">
         <g transform={transform.toString()}>
           <path className="sphere" d={spherePath} />
+          {graticule && <path className="graticule" d={graticulePath} fill="none" />}
           {shapeElements}
           {geometry.markers
             .filter(({ id }) => countryIds.has(id))
@@ -226,11 +233,14 @@ function LoadedWorldMap({
                 cx={x}
                 cy={y}
                 r={markerRadius}
+                data-id={id}
                 className={`${shapeClass(id, countryIds, foundIds, missedIds)} marker`}
                 onPointerMove={(event) => hoverAt(id, event)}
                 onPointerLeave={endHover}
               />
             ))}
+          {/* PROTOTYPE (quiet atlas): the oval's outline, unstroked unless the prototype styles it. */}
+          <path className="sphere-outline" d={spherePath} fill="none" />
           {/* Overlays are drawn on top of every shape so their outlines aren't hidden by
               neighbours'; the keys remount them so their animations replay. */}
           {flash && (
