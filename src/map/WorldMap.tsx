@@ -261,7 +261,7 @@ function LoadedWorldMap({
           {hoveredName}
         </div>
       )}
-      <button type="button" className="reset-view" onClick={resetView}>
+      <button type="button" className="secondary-button reset-view" onClick={resetView}>
         Reset view
       </button>
     </div>

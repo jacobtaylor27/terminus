@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { execSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import react from '@vitejs/plugin-react'
@@ -22,5 +23,10 @@ export default defineConfig({
   base: '/terminus/',
   define: {
     __APP_VERSION__: JSON.stringify(appVersion),
+  },
+  test: {
+    // Vitest blanks every stylesheet unless told otherwise. The palette check reads index.css as
+    // text, so stylesheets imported with ?raw keep theirs.
+    css: { include: [/\.css\?raw$/] },
   },
 })

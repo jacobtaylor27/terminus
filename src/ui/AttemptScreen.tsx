@@ -133,14 +133,14 @@ export function AttemptScreen({ quiz, mode, timer, onEnd }: AttemptScreenProps) 
           {/* Its mousedowns are kept from taking focus, so the player can toggle it mid-answer. */}
           <button
             type="button"
-            className="unfound-highlight-button"
+            className="secondary-button unfound-highlight-button"
             aria-pressed={unfoundHighlight}
             onMouseDown={(event) => event.preventDefault()}
             onClick={() => setUnfoundHighlight((on) => !on)}
           >
             Unfound Highlight
           </button>
-          <button type="button" className="pause-button" onClick={handlePause}>
+          <button type="button" className="secondary-button" onClick={handlePause}>
             Pause
           </button>
         </header>
@@ -172,10 +172,10 @@ export function AttemptScreen({ quiz, mode, timer, onEnd }: AttemptScreenProps) 
           </dl>
           {/* Give up is only reached from here, so ending an Attempt takes a Pause first. */}
           <div className="pause-actions">
-            <button type="button" className="start-button" autoFocus onClick={handleResume}>
+            <button type="button" className="primary-button large" autoFocus onClick={handleResume}>
               Resume
             </button>
-            <button type="button" className="give-up-button" onClick={handleGiveUp}>
+            <button type="button" className="secondary-button" onClick={handleGiveUp}>
               Give up
             </button>
           </div>

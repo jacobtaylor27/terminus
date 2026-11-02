@@ -1,7 +1,39 @@
+/* The quiet-atlas palette. Every colour in the app is one of these tokens, so a dark theme could
+   redefine this one set. src/palette.test.ts holds them to contrast and colour-blindness margins. */
 :root {
+  --ink: #121820; /* text, and every control's fill or outline */
+  --ink-muted: #4f5966; /* secondary text and small labels */
+  --paper: #fcfbf8; /* the page, panels and the Pause overlay */
+  --land: #f4f1ea; /* a Country's fill */
+  --land-edge: #8f979f; /* borders between Countries */
+  --sea: #cfe0ec; /* the sphere */
+  --territory: #dedbd3; /* a warm grey close to the land, so Territories never look like answers */
+  --found: #1f6a6c; /* muted teal */
+  --found-tint: #8ecfcc; /* the pulse of a new find */
+  --missed: #d4682f; /* terracotta */
+  --ochre: #e3a92a; /* the Unfound Highlight, and the "New best!" border */
+  --ochre-ink: #6a4708; /* "New best!" text */
+  --ochre-wash: #fbe8b8; /* "New best!" fill */
+
+  /* Derived from the set above. */
+  --hairline: color-mix(in srgb, var(--ink) 14%, transparent); /* dividers */
+  --hairline-strong: color-mix(in srgb, var(--ink) 28%, transparent); /* borders and rules */
+  --wash: color-mix(in srgb, var(--ink) 6%, transparent); /* hover */
+  --paper-raised: color-mix(in srgb, var(--paper) 55%, white); /* cards, options and the answer box */
+  --grid: color-mix(in srgb, var(--ink) 11%, transparent); /* the map's latitude/longitude grid */
+  --primary-hover: color-mix(in srgb, var(--ink) 82%, var(--paper)); /* a primary button, hovered */
+  /* A marker's outline is its fill, darkened. */
+  --land-marker: color-mix(in srgb, var(--land) 55%, black);
+  --found-marker: color-mix(in srgb, var(--found) 55%, black);
+  --missed-marker: color-mix(in srgb, var(--missed) 55%, black);
+  --ochre-marker: color-mix(in srgb, var(--ochre) 50%, black); /* dark ochre */
+
+  /* How much paper a frosted panel is; the map shows through the rest. */
+  --panel-paper-share: 72%;
+
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  color: #1f2933;
-  background: #f7f7f5;
+  color: var(--ink);
+  background: var(--paper);
 }
 
 html,
@@ -9,6 +41,67 @@ body,
 #root {
   height: 100%;
   margin: 0;
+}
+
+/* Every control shows keyboard focus as an ink outline. */
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.primary-button,
+.secondary-button {
+  padding: 0.4rem 0.8rem;
+  font: inherit;
+  font-size: 0.9375rem;
+  color: inherit;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+/* The way on: Start, Resume and Play again. */
+.primary-button {
+  font-weight: 600;
+  color: var(--paper);
+  background: var(--ink);
+  border: 1px solid transparent;
+}
+
+.primary-button:hover {
+  background: var(--primary-hover);
+}
+
+.primary-button.large {
+  padding: 0.65rem 2.5rem;
+  font-size: 1.125rem;
+}
+
+.secondary-button {
+  background: transparent;
+  border: 1px solid var(--hairline-strong);
+}
+
+/* The wash is laid over the button's own background, so a button that needs paper behind it keeps
+   it. */
+.secondary-button:hover:enabled {
+  background-image: linear-gradient(var(--wash), var(--wash));
+}
+
+/* Back to Quizzes. */
+.text-link {
+  padding: 0.25rem 0;
+  font: inherit;
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--hairline-strong);
+  text-underline-offset: 0.2em;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.text-link:hover {
+  text-decoration-color: currentColor;
 }
 
 .page {
@@ -33,7 +126,7 @@ body,
 }
 
 .app-version a {
-  color: #5f676f;
+  color: var(--ink-muted);
   text-decoration: none;
 }
 
@@ -74,14 +167,14 @@ body,
   font-weight: 600;
   color: inherit;
   text-align: left;
-  background: #fff;
-  border: 1px solid #dde1e6;
+  background: var(--paper-raised);
+  border: 1px solid var(--hairline-strong);
   border-radius: 8px;
   cursor: pointer;
 }
 
 .quiz-card:hover {
-  border-color: #2f6fbf;
+  border-color: var(--ink);
 }
 
 .quiz-bests {
@@ -97,7 +190,7 @@ body,
 
 .quiz-bests-label,
 .quiz-best-result.none {
-  color: #5f676f;
+  color: var(--ink-muted);
 }
 
 .quiz-bests-label {
@@ -118,18 +211,8 @@ body,
   font-weight: 400;
 }
 
-.back-button {
+.setup-back {
   margin: 0 0 1.5rem;
-  padding: 0.25rem 0;
-  font: inherit;
-  color: #2f6fbf;
-  background: none;
-  border: none;
-  cursor: pointer;
-}
-
-.back-button:hover {
-  text-decoration: underline;
 }
 
 .attempt-setup {
@@ -165,20 +248,24 @@ body,
   column-gap: 0.5rem;
   width: 16rem;
   padding: 0.75rem 1rem;
-  background: #fff;
-  border: 1px solid #dde1e6;
+  background: var(--paper-raised);
+  border: 1px solid var(--hairline-strong);
   border-radius: 8px;
   cursor: pointer;
 }
 
+.mode-option:hover {
+  border-color: var(--ink);
+}
+
 .mode-option:has(:checked) {
-  border-color: #2f6fbf;
-  box-shadow: 0 0 0 1px #2f6fbf;
+  border-color: var(--ink);
+  box-shadow: 0 0 0 1px var(--ink);
 }
 
 .mode-option input {
   margin: 0.2rem 0 0;
-  accent-color: #2f6fbf;
+  accent-color: var(--ink);
 }
 
 .mode-name {
@@ -188,7 +275,7 @@ body,
 .mode-description {
   grid-column: 2;
   font-size: 0.875rem;
-  color: #5f676f;
+  color: var(--ink-muted);
 }
 
 .timer-setting {
@@ -197,8 +284,8 @@ body,
   align-items: center;
   gap: 0.75rem 2rem;
   padding: 0.75rem 1rem;
-  background: #fff;
-  border: 1px solid #dde1e6;
+  background: var(--paper-raised);
+  border: 1px solid var(--hairline-strong);
   border-radius: 8px;
 }
 
@@ -216,7 +303,7 @@ body,
   width: 2.25rem;
   height: 1.25rem;
   margin: 0;
-  background: #c9ced6;
+  background: var(--hairline-strong);
   border-radius: 999px;
   cursor: pointer;
   transition: background 0.15s;
@@ -229,22 +316,17 @@ body,
   left: 0.15rem;
   width: 0.95rem;
   height: 0.95rem;
-  background: #fff;
+  background: var(--paper-raised);
   border-radius: 50%;
   transition: transform 0.15s;
 }
 
 .timer-toggle input:checked {
-  background: #2f6fbf;
+  background: var(--ink);
 }
 
 .timer-toggle input:checked::before {
   transform: translateX(1rem);
-}
-
-.timer-toggle input:focus-visible {
-  outline: 2px solid #1f2933;
-  outline-offset: 2px;
 }
 
 .timer-stepper {
@@ -257,23 +339,18 @@ body,
   width: 2rem;
   height: 2rem;
   padding: 0;
-  font: inherit;
   font-size: 1.125rem;
   line-height: 1;
-  color: inherit;
-  background: #fff;
-  border: 1px solid #c9ced6;
-  border-radius: 6px;
-  cursor: pointer;
 }
 
-.timer-stepper button:hover:enabled {
-  background: #f0f2f4;
+/* While the Timer is off, its duration fades with the stepper's buttons. */
+.timer-stepper button:disabled,
+.timer-stepper.off .timer-duration {
+  opacity: 0.4;
 }
 
 .timer-stepper button:disabled {
   cursor: default;
-  opacity: 0.4;
 }
 
 .timer-duration {
@@ -282,31 +359,6 @@ body,
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   text-align: center;
-}
-
-.timer-stepper.off .timer-duration {
-  color: #9aa1a8;
-}
-
-.start-button {
-  padding: 0.6rem 2rem;
-  font: inherit;
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: #fff;
-  background: #2f6fbf;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.start-button:hover {
-  background: #275d9f;
-}
-
-.start-button:focus-visible {
-  outline: 2px solid #1f2933;
-  outline-offset: 2px;
 }
 
 .attempt-screen {
@@ -326,8 +378,8 @@ body,
   align-items: center;
   gap: 1rem;
   padding: 0.75rem 1rem;
-  background: #fff;
-  border-bottom: 1px solid #dde1e6;
+  background: var(--paper);
+  border-bottom: 1px solid var(--hairline-strong);
 }
 
 .answer-box {
@@ -335,13 +387,20 @@ body,
   padding: 0.5rem 0.75rem;
   font: inherit;
   font-size: 1.25rem;
-  border: 2px solid #c9ced6;
-  border-radius: 6px;
+  color: inherit;
+  background: var(--paper-raised);
+  border: 1px solid var(--hairline-strong);
+  border-radius: 4px;
+}
+
+.answer-box::placeholder {
+  color: var(--ink-muted);
 }
 
 .answer-box:focus {
   outline: none;
-  border-color: #2f6fbf;
+  border-color: var(--ink);
+  box-shadow: 0 0 0 1px var(--ink);
 }
 
 .score {
@@ -352,7 +411,7 @@ body,
 
 .clock {
   font-size: 1.25rem;
-  color: #5f676f;
+  color: var(--ink-muted);
   font-variant-numeric: tabular-nums;
 }
 
@@ -360,32 +419,10 @@ body,
   margin-left: auto;
 }
 
-.unfound-highlight-button,
-.pause-button,
-.give-up-button {
-  padding: 0.4rem 0.9rem;
-  font: inherit;
-  color: inherit;
-  background: #fff;
-  border: 1px solid #c9ced6;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.unfound-highlight-button:hover,
-.pause-button:hover,
-.give-up-button:hover {
-  background: #f0f2f4;
-}
-
+/* Pressed: an ink border and ring, never a fill. */
 .unfound-highlight-button[aria-pressed='true'] {
-  color: #fff;
-  background: #7a4fbf;
-  border-color: #7a4fbf;
-}
-
-.unfound-highlight-button[aria-pressed='true']:hover {
-  background: #683fa8;
+  border-color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--ink);
 }
 
 .pause-overlay {
@@ -396,7 +433,7 @@ body,
   align-items: center;
   justify-content: center;
   gap: 1.5rem;
-  background: #f7f7f5;
+  background: var(--paper);
 }
 
 .pause-title {
@@ -413,7 +450,7 @@ body,
 
 .pause-stats dt {
   font-size: 0.875rem;
-  color: #5f676f;
+  color: var(--ink-muted);
 }
 
 .pause-stats dd {
@@ -442,14 +479,14 @@ body,
   align-items: center;
   gap: 1rem 2rem;
   padding: 0.75rem 1rem;
-  background: #fff;
-  border-bottom: 1px solid #dde1e6;
+  background: var(--paper);
+  border-bottom: 1px solid var(--hairline-strong);
 }
 
 .results-quiz {
   margin: 0;
   font-size: 0.875rem;
-  color: #5f676f;
+  color: var(--ink-muted);
 }
 
 .results-ending {
@@ -465,7 +502,7 @@ body,
 
 .results-stats dt {
   font-size: 0.875rem;
-  color: #5f676f;
+  color: var(--ink-muted);
 }
 
 .results-stats dd {
@@ -479,9 +516,9 @@ body,
   margin: 0;
   padding: 0.25rem 0.75rem;
   font-weight: 600;
-  color: #7a4f0e;
-  background: #fdf1d3;
-  border: 1px solid #f2b632;
+  color: var(--ochre-ink);
+  background: var(--ochre-wash);
+  border: 1px solid var(--ochre);
   border-radius: 999px;
 }
 
@@ -505,11 +542,11 @@ body,
 }
 
 .map-legend .found::before {
-  background: #2e7d4f;
+  background: var(--found);
 }
 
 .map-legend .missed::before {
-  background: #e0533f;
+  background: var(--missed);
 }
 
 .results-actions {
@@ -517,10 +554,6 @@ body,
   align-items: center;
   gap: 1rem;
   margin-left: auto;
-}
-
-.results-actions .back-button {
-  margin: 0;
 }
 
 .world-map {
@@ -538,53 +571,53 @@ body,
 }
 
 .world-map .sphere {
-  fill: #d7e6f0;
+  fill: var(--sea);
 }
 
 .world-map .country,
 .world-map .territory {
-  stroke: #8f979f;
+  stroke: var(--land-edge);
   stroke-width: 0.5px;
   stroke-linejoin: round;
   vector-effect: non-scaling-stroke;
 }
 
 .world-map .country {
-  fill: #f4f1ea;
+  fill: var(--land);
 }
 
 .world-map .country.found {
-  fill: #2e7d4f;
+  fill: var(--found);
 }
 
 .world-map .country.missed {
-  fill: #e0533f;
+  fill: var(--missed);
 }
 
 .world-map .territory {
-  fill: #bdbdbd;
+  fill: var(--territory);
   pointer-events: none;
 }
 
 .world-map .marker {
-  stroke: #5f676f;
+  stroke: var(--land-marker);
   stroke-width: 1px;
 }
 
 .world-map .marker.found {
-  stroke: #1b4d30;
+  stroke: var(--found-marker);
 }
 
 .world-map .marker.missed {
-  stroke: #8f2a1e;
+  stroke: var(--missed-marker);
 }
 
 .world-map.unfound-highlight .country:not(.found) {
-  fill: #b597e6;
+  fill: var(--ochre);
 }
 
 .world-map.unfound-highlight .marker:not(.found) {
-  stroke: #4f2a8a;
+  stroke: var(--ochre-marker);
   stroke-width: 2.5px;
 }
 
@@ -597,26 +630,36 @@ body,
   vector-effect: non-scaling-stroke;
 }
 
+/* Already Found: an ink outline that blinks twice, so it never reads as the Unfound Highlight. */
 .world-map .flash {
-  fill: #f2b632;
-  stroke: #b7791f;
-  stroke-width: 1.5px;
-  animation: flash 1.2s ease-out forwards;
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 2.5px;
+  animation: flash 1.2s linear forwards;
 }
 
 @keyframes flash {
   0%,
-  40% {
+  22% {
     opacity: 1;
   }
+  25%,
+  47% {
+    opacity: 0;
+  }
+  50%,
+  72% {
+    opacity: 1;
+  }
+  75%,
   100% {
     opacity: 0;
   }
 }
 
 .world-map .pulse {
-  fill: #8fe0ad;
-  stroke: #57c785;
+  fill: var(--found-tint);
+  stroke: var(--found-tint);
   animation: pulse 0.7s ease-out 2 forwards;
 }
 
@@ -635,7 +678,7 @@ body,
 
 .world-map .hovered {
   fill: none;
-  stroke: #1f2933;
+  stroke: var(--ink);
   stroke-width: 1.5px;
 }
 
@@ -644,28 +687,19 @@ body,
   transform: translate(-50%, calc(-100% - 12px));
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
-  background: #1f2933;
-  color: #fff;
+  background: var(--ink);
+  color: var(--paper);
   font-size: 0.875rem;
   white-space: nowrap;
   pointer-events: none;
 }
 
-.reset-view {
+/* It sits over the map, so unlike other secondary buttons it keeps paper behind it. */
+.world-map .reset-view {
   position: absolute;
   right: 1rem;
   bottom: 1rem;
-  padding: 0.4rem 0.75rem;
-  font: inherit;
-  color: inherit;
-  background: #fff;
-  border: 1px solid #c9ced6;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.reset-view:hover {
-  background: #f0f2f4;
+  background-color: var(--paper);
 }
 
 .map-message {
@@ -675,6 +709,6 @@ body,
   place-items: center;
   margin: 0;
   padding: 1rem;
-  color: #5f676f;
+  color: var(--ink-muted);
   text-align: center;
 }

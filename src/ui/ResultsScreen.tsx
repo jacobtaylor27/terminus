@@ -53,10 +53,10 @@ export function ResultsScreen({ quiz, finalState, newBest, onPlayAgain, onBack }
           <li className="missed">Missed</li>
         </ul>
         <div className="results-actions">
-          <button type="button" className="start-button" onClick={onPlayAgain}>
+          <button type="button" className="primary-button" onClick={onPlayAgain}>
             Play again
           </button>
-          <button type="button" className="back-button" onClick={onBack}>
+          <button type="button" className="text-link" onClick={onBack}>
             Back to Quizzes
           </button>
         </div>

@@ -33,7 +33,7 @@ export function AttemptSetupScreen({ quiz, onStart, onBack }: AttemptSetupScreen
 
   return (
     <main className="page">
-      <button type="button" className="back-button" onClick={onBack}>
+      <button type="button" className="text-link setup-back" onClick={onBack}>
         <span aria-hidden="true">← </span>Back to Quizzes
       </button>
       <h1 className="page-heading">{quiz.title}</h1>
@@ -69,6 +69,7 @@ export function AttemptSetupScreen({ quiz, onStart, onBack }: AttemptSetupScreen
             <div className={timerOn ? 'timer-stepper' : 'timer-stepper off'}>
               <button
                 type="button"
+                className="secondary-button"
                 aria-label="One minute less"
                 disabled={!timerOn || timerMinutes <= MIN_TIMER_MINUTES}
                 onClick={() => changeTimerBy(-1)}
@@ -80,6 +81,7 @@ export function AttemptSetupScreen({ quiz, onStart, onBack }: AttemptSetupScreen
               </output>
               <button
                 type="button"
+                className="secondary-button"
                 aria-label="One minute more"
                 disabled={!timerOn || timerMinutes >= MAX_TIMER_MINUTES}
                 onClick={() => changeTimerBy(1)}
@@ -90,7 +92,7 @@ export function AttemptSetupScreen({ quiz, onStart, onBack }: AttemptSetupScreen
           </div>
         </fieldset>
         {/* Focused on arrival, so Enter starts straight away. */}
-        <button type="submit" className="start-button" autoFocus>
+        <button type="submit" className="primary-button large" autoFocus>
           Start
         </button>
       </form>
