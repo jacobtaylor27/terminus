@@ -2,11 +2,12 @@ import { useMemo } from 'react'
 import type { EndedAttemptState, Ending } from '../attempt/attempt.ts'
 import { WorldMap } from '../map/WorldMap.tsx'
 import type { Quiz } from '../quiz/quiz.ts'
-import { formatDuration } from './formatDuration.ts'
+import { formatDuration, formatTimerTime } from './formatDuration.ts'
 
 // How each way an Attempt can end is announced on the Results screen.
 const endingTitles: Record<Ending, string> = {
   completed: 'Completed',
+  'times-up': "Time's up",
   'gave-up': 'Gave up',
 }
 
@@ -20,6 +21,8 @@ interface ResultsScreenProps {
 export function ResultsScreen({ quiz, finalState, onPlayAgain, onBack }: ResultsScreenProps) {
   const foundIds = useMemo(() => new Set(finalState.found.map((place) => place.id)), [finalState])
   const missedIds = useMemo(() => new Set(finalState.missed.map((place) => place.id)), [finalState])
+  // Times under a Timer are shown in minutes alone, like its countdown, so a full 60:00 isn't 1:00:00.
+  const formatTime = finalState.timer ? formatTimerTime : formatDuration
 
   return (
     <div className="results-screen">
@@ -37,7 +40,11 @@ export function ResultsScreen({ quiz, finalState, onPlayAgain, onBack }: Results
           </div>
           <div>
             <dt>Time</dt>
-            <dd>{formatDuration(finalState.elapsedMs)}</dd>
+            <dd>{formatTime(finalState.elapsedMs)}</dd>
+          </div>
+          <div>
+            <dt>Timer</dt>
+            <dd>{finalState.timer ? formatTimerTime(finalState.timer.durationMs) : 'Off'}</dd>
           </div>
         </dl>
         <ul className="map-legend">

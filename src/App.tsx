@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { EndedAttemptState } from './attempt/attempt.ts'
+import type { EndedAttemptState, TimerSetting } from './attempt/attempt.ts'
 import { quizCatalog } from './quiz/catalog.ts'
 import type { Mode, Quiz } from './quiz/quiz.ts'
 import { AttemptScreen } from './ui/AttemptScreen.tsx'
@@ -10,8 +10,8 @@ import { ResultsScreen } from './ui/ResultsScreen.tsx'
 type Screen =
   | { kind: 'quiz-list' }
   | { kind: 'attempt-setup'; quiz: Quiz }
-  | { kind: 'attempt'; quiz: Quiz; mode: Mode }
-  | { kind: 'results'; quiz: Quiz; mode: Mode; finalState: EndedAttemptState }
+  | { kind: 'attempt'; quiz: Quiz; mode: Mode; timer: TimerSetting }
+  | { kind: 'results'; quiz: Quiz; mode: Mode; timer: TimerSetting; finalState: EndedAttemptState }
 
 export function App() {
   const [screen, setScreen] = useState<Screen>({ kind: 'quiz-list' })
@@ -28,7 +28,7 @@ export function App() {
       return (
         <AttemptSetupScreen
           quiz={screen.quiz}
-          onStart={(mode) => setScreen({ kind: 'attempt', quiz: screen.quiz, mode })}
+          onStart={(mode, timer) => setScreen({ kind: 'attempt', quiz: screen.quiz, mode, timer })}
           onBack={() => setScreen({ kind: 'quiz-list' })}
         />
       )
@@ -37,7 +37,10 @@ export function App() {
         <AttemptScreen
           quiz={screen.quiz}
           mode={screen.mode}
-          onEnd={(finalState) => setScreen({ kind: 'results', quiz: screen.quiz, mode: screen.mode, finalState })}
+          timer={screen.timer}
+          onEnd={(finalState) =>
+            setScreen({ kind: 'results', quiz: screen.quiz, mode: screen.mode, timer: screen.timer, finalState })
+          }
         />
       )
     case 'results':
@@ -45,7 +48,9 @@ export function App() {
         <ResultsScreen
           quiz={screen.quiz}
           finalState={screen.finalState}
-          onPlayAgain={() => setScreen({ kind: 'attempt', quiz: screen.quiz, mode: screen.mode })}
+          onPlayAgain={() =>
+            setScreen({ kind: 'attempt', quiz: screen.quiz, mode: screen.mode, timer: screen.timer })
+          }
           onBack={() => setScreen({ kind: 'quiz-list' })}
         />
       )

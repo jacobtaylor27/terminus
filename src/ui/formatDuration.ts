@@ -6,3 +6,10 @@ export function formatDuration(ms: number): string {
   const seconds = String(totalSeconds % 60).padStart(2, '0')
   return hours > 0 ? `${hours}:${String(minutes).padStart(2, '0')}:${seconds}` : `${minutes}:${seconds}`
 }
+
+// A time on a Timer, in whole seconds and never in hours, as a Timer runs for at most 60:00:
+// 0:05, 12:34 or 60:00.
+export function formatTimerTime(ms: number): string {
+  const totalSeconds = Math.floor(ms / 1000)
+  return `${Math.floor(totalSeconds / 60)}:${String(totalSeconds % 60).padStart(2, '0')}`
+}

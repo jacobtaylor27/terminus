@@ -4,6 +4,10 @@ import { type Attempt, type Clock, startAttempt } from './attempt.ts'
 
 const start = (clock: Clock = () => 0) => startAttempt(countriesOfTheWorld, 'free-recall', clock)
 
+// Starts an Attempt with the Timer on, set to the given number of minutes.
+const startWithTimer = (minutes: number, clock: Clock) =>
+  startAttempt(countriesOfTheWorld, 'free-recall', clock, minutes * 60_000)
+
 // A clock that stands still until the test moves it on, starting from an arbitrary moment.
 function testClock() {
   let now = 1_000_000
@@ -88,6 +92,112 @@ describe('elapsed time', () => {
 
     expect(attempt.state().elapsedMs).toBe(10 * 60_000)
     expect(attempt.state().status).toBe('in-progress')
+  })
+})
+
+describe('the Timer', () => {
+  it('is off unless the Attempt is started with one', () => {
+    expect(start().state().timer).toBeNull()
+  })
+
+  it('counts down from its duration, by the clock the Attempt was given', () => {
+    const clock = testClock()
+    const attempt = startWithTimer(15, clock.now)
+    expect(attempt.state().timer).toEqual({ durationMs: 900_000, remainingMs: 900_000 })
+
+    clock.advance(1_500)
+    expect(attempt.state().timer).toEqual({ durationMs: 900_000, remainingMs: 898_500 })
+
+    clock.advance(61_000)
+    expect(attempt.state()).toMatchObject({
+      status: 'in-progress',
+      elapsedMs: 62_500,
+      timer: { durationMs: 900_000, remainingMs: 837_500 },
+    })
+  })
+
+  it("ends the Attempt as Time's up when it reaches 0:00, with every Unfound Country Missed", () => {
+    const clock = testClock()
+    const attempt = startWithTimer(10, clock.now)
+    attempt.inputChanged('Japan')
+    attempt.inputChanged('Peru')
+
+    clock.advance(599_999)
+    expect(attempt.state()).toMatchObject({ status: 'in-progress', timer: { remainingMs: 1 } })
+
+    clock.advance(1)
+    const state = endedState(attempt)
+    expect(state.status).toBe('times-up')
+    expect(state.score).toBe(2)
+    expect(state.missed).toHaveLength(195)
+    expect(state.missed.map((place) => place.id)).not.toContain('JPN')
+    expect(state.elapsedMs).toBe(600_000)
+    expect(state.timer).toEqual({ durationMs: 600_000, remainingMs: 0 })
+  })
+
+  it('accepts no answers and counts no Wrong Guesses once it has run out, even before the Attempt is next read', () => {
+    const clock = testClock()
+    const attempt = startWithTimer(10, clock.now)
+    attempt.inputChanged('Japan')
+    clock.advance(600_000)
+
+    expect(attempt.inputChanged('France')).toEqual({ kind: 'no-match' })
+    expect(attempt.commit('Atlantis')).toEqual({ kind: 'nothing' })
+    expect(attempt.state()).toMatchObject({ status: 'times-up', score: 1, wrongGuessCount: 0 })
+  })
+
+  it('still lets the Attempt end as Completed when every Country is Found before 0:00', () => {
+    const clock = testClock()
+    const attempt = startWithTimer(10, clock.now)
+    clock.advance(400_000)
+    findEveryCountry(attempt)
+
+    clock.advance(400_000)
+
+    expect(attempt.state()).toMatchObject({
+      status: 'completed',
+      score: 197,
+      missed: [],
+      elapsedMs: 400_000,
+      timer: { durationMs: 600_000, remainingMs: 200_000 },
+    })
+  })
+
+  it("ends the Attempt as Time's up, not Gave up, when the player gives up after 0:00 before the Attempt is next read", () => {
+    const clock = testClock()
+    const attempt = startWithTimer(10, clock.now)
+    clock.advance(600_500)
+
+    attempt.giveUp()
+
+    expect(attempt.state()).toMatchObject({ status: 'times-up', elapsedMs: 600_000 })
+  })
+
+  it('is either running with time left or up, even read by a clock that moves while it is read', () => {
+    // Like the real clock, this one moves on between one reading and the next.
+    let now = 0
+    const attempt = startWithTimer(1, () => (now += 1))
+    now += 59_990
+
+    for (let read = 0; read < 20; read++) {
+      const state = attempt.state()
+      if (state.status === 'in-progress') expect(state.timer?.remainingMs).toBeGreaterThan(0)
+      else expect(state).toMatchObject({ status: 'times-up', elapsedMs: 60_000, timer: { remainingMs: 0 } })
+    }
+    expect(attempt.state().status).toBe('times-up')
+  })
+
+  it('stops the clock at 0:00, however late the Attempt is next read', () => {
+    const clock = testClock()
+    const attempt = startWithTimer(10, clock.now)
+
+    clock.advance(25 * 60_000)
+
+    expect(attempt.state()).toMatchObject({
+      status: 'times-up',
+      elapsedMs: 600_000,
+      timer: { durationMs: 600_000, remainingMs: 0 },
+    })
   })
 })
 

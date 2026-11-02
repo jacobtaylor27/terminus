@@ -4,8 +4,11 @@ import { acceptedNames, type Mode, type Place, type Quiz } from '../quiz/quiz.ts
 // so tests control time.
 export type Clock = () => number
 
+// The Timer an Attempt is played against: its duration in milliseconds, or null to play without one.
+export type TimerSetting = number | null
+
 // How an Attempt ended.
-export type Ending = 'completed' | 'gave-up'
+export type Ending = 'completed' | 'times-up' | 'gave-up'
 
 interface Progress {
   score: number
@@ -14,6 +17,8 @@ interface Progress {
   unfound: Place[]
   wrongGuessCount: number
   elapsedMs: number
+  // The Timer's duration and the time left on it, or null for an Attempt without one.
+  timer: { durationMs: number; remainingMs: number } | null
 }
 
 export type AttemptState =
@@ -51,7 +56,12 @@ function normalize(text: string): string {
     .replace(/^the /, '')
 }
 
-export function startAttempt(quiz: Quiz, _mode: Mode, clock: Clock): Attempt {
+export function startAttempt(
+  quiz: Quiz,
+  _mode: Mode,
+  clock: Clock,
+  timerMs: TimerSetting = null,
+): Attempt {
   const startedAt = clock()
   const placesByAcceptedName = new Map(
     quiz.places.flatMap((place) =>
@@ -60,21 +70,37 @@ export function startAttempt(quiz: Quiz, _mode: Mode, clock: Clock): Attempt {
   )
   const found = new Set<Place>()
   let wrongGuessCount = 0
-  // How and when the Attempt ended, once it has.
-  let end: { ending: Ending; at: number } | undefined
+  // How the Attempt ended and the time played when it did, once it has.
+  let end: { ending: Ending; elapsedMs: number } | undefined
+
+  // The time played by the given moment, which stops when the Attempt ends. Measured between
+  // timestamps, so it stays right however rarely it is read.
+  function elapsedAt(now: number) {
+    return end ? end.elapsedMs : now - startedAt
+  }
+
+  // Ends the Attempt as Time's up if the Timer has run out by the given moment, stopping the clock at
+  // 0:00. Each operation reads the clock once and uses that moment throughout, so its checks agree.
+  function endIfTimesUp(now: number) {
+    if (timerMs === null || elapsedAt(now) < timerMs) return
+    end ??= { ending: 'times-up', elapsedMs: timerMs }
+  }
 
   return {
     inputChanged(text) {
+      const now = clock()
+      endIfTimesUp(now)
       if (end) return { kind: 'no-match' }
       const place = placesByAcceptedName.get(normalize(text))
       if (!place) return { kind: 'no-match' }
       if (found.has(place)) return { kind: 'already-found', place }
       found.add(place)
-      if (found.size === quiz.places.length) end = { ending: 'completed', at: clock() }
+      if (found.size === quiz.places.length) end = { ending: 'completed', elapsedMs: elapsedAt(now) }
       return { kind: 'accepted', place }
     },
 
     commit(text) {
+      endIfTimesUp(clock())
       if (end || text.trim() === '') return { kind: 'nothing' }
       const place = placesByAcceptedName.get(normalize(text))
       if (!place) {
@@ -87,19 +113,24 @@ export function startAttempt(quiz: Quiz, _mode: Mode, clock: Clock): Attempt {
     },
 
     giveUp() {
-      end ??= { ending: 'gave-up', at: clock() }
+      const now = clock()
+      endIfTimesUp(now)
+      end ??= { ending: 'gave-up', elapsedMs: elapsedAt(now) }
     },
 
     state() {
+      const now = clock()
+      endIfTimesUp(now)
       const unfound = quiz.places.filter((place) => !found.has(place))
+      const elapsedMs = elapsedAt(now)
       const progress: Progress = {
         score: found.size,
         total: quiz.places.length,
         found: [...found],
         unfound,
         wrongGuessCount,
-        // Measured between timestamps, so it stays right however rarely it is read.
-        elapsedMs: (end?.at ?? clock()) - startedAt,
+        elapsedMs,
+        timer: timerMs === null ? null : { durationMs: timerMs, remainingMs: timerMs - elapsedMs },
       }
       return end
         ? { ...progress, status: end.ending, missed: unfound }

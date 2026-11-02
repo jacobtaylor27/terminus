@@ -1,24 +1,30 @@
 import { type KeyboardEvent, useEffect, useMemo, useState } from 'react'
-import { type EndedAttemptState, startAttempt } from '../attempt/attempt.ts'
+import {
+  type AttemptState,
+  type EndedAttemptState,
+  startAttempt,
+  type TimerSetting,
+} from '../attempt/attempt.ts'
 import { type Cue, WorldMap } from '../map/WorldMap.tsx'
 import type { Mode, Quiz } from '../quiz/quiz.ts'
-import { formatDuration } from './formatDuration.ts'
+import { formatDuration, formatTimerTime } from './formatDuration.ts'
 
-// How often the stopwatch reads the Attempt's elapsed time. The time itself comes from timestamps,
-// so a tick that a background tab delays only delays the display.
+// How often the clock reads the Attempt's time. The time itself comes from timestamps, so a tick
+// that a background tab delays only delays the display, and the Timer still runs out on time.
 const TICK_MS = 250
 
 interface AttemptScreenProps {
   quiz: Quiz
   mode: Mode
+  timer: TimerSetting
   onEnd: (finalState: EndedAttemptState) => void
 }
 
-export function AttemptScreen({ quiz, mode, onEnd }: AttemptScreenProps) {
-  const [attempt] = useState(() => startAttempt(quiz, mode, Date.now))
+export function AttemptScreen({ quiz, mode, timer, onEnd }: AttemptScreenProps) {
+  const [attempt] = useState(() => startAttempt(quiz, mode, Date.now, timer))
   const [state, setState] = useState(() => attempt.state())
   // Kept apart from the rest of the state, so ticking doesn't rebuild the map's Found set.
-  const [elapsedMs, setElapsedMs] = useState(0)
+  const [clockText, setClockText] = useState(() => formatClock(state))
   const [answer, setAnswer] = useState('')
   const [pulse, setPulse] = useState<Cue | null>(null)
   const [flash, setFlash] = useState<Cue | null>(null)
@@ -26,9 +32,14 @@ export function AttemptScreen({ quiz, mode, onEnd }: AttemptScreenProps) {
   const foundIds = useMemo(() => new Set(state.found.map((place) => place.id)), [state])
 
   useEffect(() => {
-    const ticker = setInterval(() => setElapsedMs(attempt.state().elapsedMs), TICK_MS)
+    const ticker = setInterval(() => {
+      const latest = attempt.state()
+      // A Timer runs out between answers, so it's a tick that finds the Attempt ended as Time's up.
+      if (latest.status === 'in-progress') setClockText(formatClock(latest))
+      else onEnd(latest)
+    }, TICK_MS)
     return () => clearInterval(ticker)
-  }, [attempt])
+  }, [attempt, onEnd])
 
   // Shows the Attempt's latest state, or its Results once it has ended.
   function showLatest() {
@@ -79,8 +90,8 @@ export function AttemptScreen({ quiz, mode, onEnd }: AttemptScreenProps) {
         <output className="score" aria-label="Score">
           {state.score}/{state.total}
         </output>
-        <span className="clock" role="timer" aria-label="Time">
-          {formatDuration(elapsedMs)}
+        <span className="clock" role="timer" aria-label={state.timer ? 'Time left' : 'Time'}>
+          {clockText}
         </span>
         <button type="button" className="give-up-button" onClick={handleGiveUp}>
           Give up
@@ -96,6 +107,14 @@ export function AttemptScreen({ quiz, mode, onEnd }: AttemptScreenProps) {
       />
     </div>
   )
+}
+
+// What the clock shows: the countdown with the Timer on, or else the stopwatch. The countdown is
+// rounded up to whole seconds, so it reads 0:00 only once the time has run out.
+function formatClock(state: AttemptState): string {
+  return state.timer
+    ? formatTimerTime(Math.ceil(state.timer.remainingMs / 1000) * 1000)
+    : formatDuration(state.elapsedMs)
 }
 
 // Cues the Country with the next sequence number, so its animation replays.
