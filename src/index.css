@@ -28,8 +28,11 @@
   --missed-marker: color-mix(in srgb, var(--missed) 55%, black);
   --ochre-marker: color-mix(in srgb, var(--ochre) 50%, black); /* dark ochre */
 
-  /* How much paper a frosted panel is; the map shows through the rest. */
+  /* A frosted panel's fill, which is mostly paper so the map shows through, and its border. The
+     paper's share is a token of its own, so the palette check can read it. */
   --panel-paper-share: 72%;
+  --panel-paper: color-mix(in srgb, var(--paper) var(--panel-paper-share), transparent);
+  --panel-edge: color-mix(in srgb, var(--ink) 12%, transparent);
 
   /* The serif for display text, which ships with the site. Until it loads, display text shows at
      once in Georgia. */
@@ -107,6 +110,14 @@ body,
 
 .text-link:hover {
   text-decoration-color: currentColor;
+}
+
+/* Paper the map shows through, for the panels and buttons over the map. */
+.frosted-panel {
+  background: var(--panel-paper);
+  border: 1px solid var(--panel-edge);
+  border-radius: 8px;
+  backdrop-filter: blur(8px) saturate(1.2);
 }
 
 /* Display text is set in the serif: the titles and headings, and the Score figures. */
@@ -411,24 +422,67 @@ body,
   height: 100%;
 }
 
+/* The map fills the window, and the panels float over it in the empty corners around the world
+   oval. Its own stacking context keeps the panels over the map but under the Pause overlay. */
 .attempt-play {
-  display: flex;
-  flex-direction: column;
+  position: relative;
+  isolation: isolate;
   height: 100%;
 }
 
-.attempt-bar {
+.attempt-play .world-map {
+  position: absolute;
+  inset: 0;
+}
+
+.attempt-play > .frosted-panel {
+  position: absolute;
+  z-index: 1;
+  box-sizing: border-box;
+}
+
+/* The answer box, at the bottom centre over Antarctica. */
+.answer-panel {
+  bottom: 1rem;
+  left: 50%;
+  width: min(26rem, calc(100% - 2rem));
+  padding: 0.5rem;
+  transform: translateX(-50%);
+}
+
+/* The Score and the clock, at the top left. */
+.attempt-stats {
+  top: 1rem;
+  left: 1rem;
   display: flex;
-  flex-wrap: wrap;
+  gap: 1.25rem;
+  margin: 0;
+  padding: 0.55rem 0.9rem;
+}
+
+/* The clock's line is as tall as the Score's, so the two figures sit level. */
+.attempt-stats dd {
+  margin: 0.15rem 0 0;
+  line-height: 1.75rem;
+}
+
+.attempt-stats .score-figure {
+  font-size: 1.75rem;
+}
+
+/* The Unfound Highlight and Pause, at the top right. */
+.attempt-controls {
+  top: 1rem;
+  right: 1rem;
+  display: flex;
   align-items: center;
-  gap: 1rem;
-  padding: 0.75rem 1rem;
-  background: var(--paper);
-  border-bottom: 1px solid var(--hairline-strong);
+  gap: 0.5rem;
+  padding: 0.45rem;
 }
 
 .answer-box {
-  width: min(24rem, 100%);
+  box-sizing: border-box;
+  width: 100%;
   padding: 0.5rem 0.75rem;
   font: inherit;
   font-size: 1.25rem;
@@ -448,24 +502,99 @@ body,
   box-shadow: 0 0 0 1px var(--ink);
 }
 
-.attempt-bar .score-figure {
-  font-size: 1.75rem;
-}
-
 .clock {
   font-size: 1.25rem;
-  color: var(--ink-muted);
   font-variant-numeric: tabular-nums lining-nums;
 }
 
+/* Led by a swatch of the ochre it paints. */
 .unfound-highlight-button {
-  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  white-space: nowrap;
 }
 
 /* Pressed: an ink border and ring, never a fill. */
 .unfound-highlight-button[aria-pressed='true'] {
   border-color: var(--ink);
   box-shadow: inset 0 0 0 1px var(--ink);
+}
+
+/* Hollow while the Unfound Highlight is off, and filled while it's on. */
+.unfound-swatch {
+  flex: none;
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 2px;
+  box-shadow: inset 0 0 0 1.5px var(--ochre-marker);
+}
+
+.unfound-highlight-button[aria-pressed='true'] .unfound-swatch {
+  background: var(--ochre);
+}
+
+/* Up to 720 px wide, the panels would cover land, so they become opaque strips along the top and
+   bottom edges, outside the oval, and the map shrinks to fit between them. */
+@media (max-width: 720px) {
+  .attempt-play {
+    display: grid;
+    grid-template:
+      'stats controls' auto
+      'map map' minmax(0, 1fr)
+      'answer answer' auto / 1fr auto;
+  }
+
+  .attempt-play .world-map {
+    position: relative;
+    inset: auto;
+    grid-area: map;
+  }
+
+  .attempt-play > .frosted-panel {
+    position: static;
+    width: auto;
+    background: var(--paper);
+    border: none;
+    border-radius: 0;
+    transform: none;
+    backdrop-filter: none;
+  }
+
+  .attempt-play > .attempt-stats,
+  .attempt-play > .attempt-controls {
+    border-bottom: 1px solid var(--hairline-strong);
+  }
+
+  .attempt-play > .answer-panel {
+    border-top: 1px solid var(--hairline-strong);
+  }
+
+  /* Tighter than the panels, so the widest Score and clock fit beside the buttons at 360 px. Should
+     they ever not, the clock wraps under the Score rather than push the strip off the screen. */
+  .attempt-stats {
+    grid-area: stats;
+    flex-wrap: wrap;
+    gap: 0.25rem 0.75rem;
+    padding-inline: 0.75rem;
+  }
+
+  .attempt-controls {
+    grid-area: controls;
+  }
+
+  .attempt-controls .secondary-button {
+    padding-inline: 0.5rem;
+  }
+
+  .answer-panel {
+    grid-area: answer;
+  }
+
+  /* The button reads "Unfound", so it fits the top strip. */
+  .unfound-label-rest {
+    display: none;
+  }
 }
 
 .pause-overlay {
@@ -743,8 +872,10 @@ body,
   stroke-width: 1.5px;
 }
 
+/* Over the Attempt screen's panels, so a name near one isn't hidden behind it. */
 .map-tooltip {
   position: absolute;
+  z-index: 2;
   transform: translate(-50%, calc(-100% - 12px));
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
@@ -755,12 +886,10 @@ body,
   pointer-events: none;
 }
 
-/* It sits over the map, so unlike other secondary buttons it keeps paper behind it. */
 .world-map .reset-view {
   position: absolute;
   right: 1rem;
   bottom: 1rem;
-  background-color: var(--paper);
 }
 
 .map-message {

@@ -111,9 +111,9 @@ export function AttemptScreen({ quiz, mode, timer, onEnd }: AttemptScreenProps) 
 
   return (
     <div className="attempt-screen">
-      {/* Under the Pause overlay, the bar and map can't be focused, typed into or clicked. */}
+      {/* Under the Pause overlay, the panels and map can't be focused, typed into or clicked. */}
       <div className="attempt-play" inert={paused}>
-        <header className="attempt-bar">
+        <div className="frosted-panel answer-panel">
           <input
             ref={answerBoxRef}
             className="answer-box"
@@ -125,26 +125,46 @@ export function AttemptScreen({ quiz, mode, timer, onEnd }: AttemptScreenProps) 
             onChange={(event) => handleAnswerChange(event.target.value)}
             onKeyDown={handleAnswerKeyDown}
           />
-          <output aria-label="Score">
-            <ScoreFigure score={state.score} total={state.total} />
-          </output>
-          <span className="clock" role="timer" aria-label={clockLabel}>
-            {clockText}
-          </span>
-          {/* Its mousedowns are kept from taking focus, so the player can toggle it mid-answer. */}
+        </div>
+        <dl className="frosted-panel attempt-stats">
+          <div>
+            <dt className="small-label">Score</dt>
+            <dd>
+              <output aria-label="Score">
+                <ScoreFigure score={state.score} total={state.total} />
+              </output>
+            </dd>
+          </div>
+          <div>
+            <dt className="small-label">{clockLabel}</dt>
+            <dd>
+              <span className="clock" role="timer" aria-label={clockLabel}>
+                {clockText}
+              </span>
+            </dd>
+          </div>
+        </dl>
+        <div className="frosted-panel attempt-controls">
+          {/* Its mousedowns are kept from taking focus, so the player can toggle it mid-answer. On
+              narrow screens it reads "Unfound", but its name stays the glossary term. */}
           <button
             type="button"
             className="secondary-button unfound-highlight-button"
             aria-pressed={unfoundHighlight}
+            aria-label="Unfound Highlight"
+            title="Unfound Highlight: marks where every Unfound answer is, without naming any"
             onMouseDown={(event) => event.preventDefault()}
             onClick={() => setUnfoundHighlight((on) => !on)}
           >
-            Unfound Highlight
+            <span className="unfound-swatch" />
+            <span>
+              Unfound<span className="unfound-label-rest"> Highlight</span>
+            </span>
           </button>
           <button type="button" className="secondary-button" onClick={handlePause}>
             Pause
           </button>
-        </header>
+        </div>
         <WorldMap
           countries={quiz.places}
           foundIds={foundIds}
