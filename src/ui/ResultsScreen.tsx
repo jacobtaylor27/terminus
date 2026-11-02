@@ -67,6 +67,7 @@ export function ResultsScreen({ quiz, finalState, onPlayAgain, onBack }: Results
         tooltips="all"
         pulse={null}
         flash={null}
+        unfoundHighlight={false}
       />
     </div>
   )

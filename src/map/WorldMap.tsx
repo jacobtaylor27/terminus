@@ -60,6 +60,8 @@ interface WorldMapProps {
   pulse: Cue | null
   // An already-Found Country, to flash.
   flash: Cue | null
+  // Whether the Unfound Highlight is on, marking where every Unfound Country is without naming any.
+  unfoundHighlight: boolean
 }
 
 interface Hover {
@@ -68,7 +70,15 @@ interface Hover {
   y: number
 }
 
-export function WorldMap({ countries, foundIds, missedIds, tooltips, pulse, flash }: WorldMapProps) {
+export function WorldMap({
+  countries,
+  foundIds,
+  missedIds,
+  tooltips,
+  pulse,
+  flash,
+  unfoundHighlight,
+}: WorldMapProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const svgRef = useRef<SVGSVGElement>(null)
   const zoomRef = useRef<ZoomBehavior<SVGSVGElement, unknown>>(null)
@@ -123,6 +133,9 @@ export function WorldMap({ countries, foundIds, missedIds, tooltips, pulse, flas
   const markerRadius = MARKER_RADIUS / transform.k
   const hoveredName =
     hover && (tooltips === 'all' || foundIds.has(hover.id)) ? namesById.get(hover.id) : undefined
+  // The Unfound Highlight is styled from a class on the whole map, so toggling it doesn't rebuild
+  // the Country shapes.
+  const mapClassName = unfoundHighlight ? 'world-map unfound-highlight' : 'world-map'
 
   function resetView() {
     select(svgRef.current!).transition().duration(600).call(zoomRef.current!.transform, zoomIdentity)
@@ -131,7 +144,7 @@ export function WorldMap({ countries, foundIds, missedIds, tooltips, pulse, flas
   // Mousedowns on the map are kept from taking focus, so the answer box keeps it while the player
   // zooms, pans and resets the view. They're caught on the way down, as d3-zoom stops them bubbling.
   return (
-    <div ref={containerRef} className="world-map" onMouseDownCapture={(event) => event.preventDefault()}>
+    <div ref={containerRef} className={mapClassName} onMouseDownCapture={(event) => event.preventDefault()}>
       <svg ref={svgRef} viewBox={`0 0 ${WIDTH} ${HEIGHT}`} role="img" aria-label="World map">
         <g transform={transform.toString()}>
           <path className="sphere" d={spherePath} />

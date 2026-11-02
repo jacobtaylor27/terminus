@@ -265,6 +265,7 @@ body,
 
 .attempt-bar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 1rem;
   padding: 0.75rem 1rem;
@@ -298,10 +299,11 @@ body,
   font-variant-numeric: tabular-nums;
 }
 
-.pause-button {
+.unfound-highlight-button {
   margin-left: auto;
 }
 
+.unfound-highlight-button,
 .pause-button,
 .give-up-button {
   padding: 0.4rem 0.9rem;
@@ -313,9 +315,20 @@ body,
   cursor: pointer;
 }
 
+.unfound-highlight-button:hover,
 .pause-button:hover,
 .give-up-button:hover {
   background: #f0f2f4;
+}
+
+.unfound-highlight-button[aria-pressed='true'] {
+  color: #fff;
+  background: #7a4fbf;
+  border-color: #7a4fbf;
+}
+
+.unfound-highlight-button[aria-pressed='true']:hover {
+  background: #683fa8;
 }
 
 .pause-overlay {
@@ -490,6 +503,15 @@ body,
 
 .world-map .marker.missed {
   stroke: #8f2a1e;
+}
+
+.world-map.unfound-highlight .country:not(.found) {
+  fill: #b597e6;
+}
+
+.world-map.unfound-highlight .marker:not(.found) {
+  stroke: #4f2a8a;
+  stroke-width: 2.5px;
 }
 
 .world-map .overlay {

@@ -29,6 +29,8 @@ export function AttemptScreen({ quiz, mode, timer, onEnd }: AttemptScreenProps) 
   const [answer, setAnswer] = useState('')
   const [pulse, setPulse] = useState<Cue | null>(null)
   const [flash, setFlash] = useState<Cue | null>(null)
+  // The Unfound Highlight is only a way of looking at the map, so the Attempt never knows of it.
+  const [unfoundHighlight, setUnfoundHighlight] = useState(false)
   const answerBoxRef = useRef<HTMLInputElement>(null)
   const paused = state.status === 'paused'
   const clockLabel = state.timer ? 'Time left' : 'Time'
@@ -119,6 +121,16 @@ export function AttemptScreen({ quiz, mode, timer, onEnd }: AttemptScreenProps) 
           <span className="clock" role="timer" aria-label={clockLabel}>
             {clockText}
           </span>
+          {/* Its mousedowns are kept from taking focus, so the player can toggle it mid-answer. */}
+          <button
+            type="button"
+            className="unfound-highlight-button"
+            aria-pressed={unfoundHighlight}
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => setUnfoundHighlight((on) => !on)}
+          >
+            Unfound Highlight
+          </button>
           <button type="button" className="pause-button" onClick={handlePause}>
             Pause
           </button>
@@ -133,6 +145,7 @@ export function AttemptScreen({ quiz, mode, timer, onEnd }: AttemptScreenProps) 
           tooltips="found"
           pulse={pulse}
           flash={flash}
+          unfoundHighlight={unfoundHighlight}
         />
       </div>
       {/* Covers the map and Found answers, so the player can't study them with the clock stopped. */}
