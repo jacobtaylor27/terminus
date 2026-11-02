@@ -1,4 +1,4 @@
-import type { GeometryCollection, Topology } from 'topojson-specification'
+import type { WorldTopology } from './mapShapes.ts'
 
-declare const world: Topology<{ shapes: GeometryCollection }>
+declare const world: WorldTopology
 export default world

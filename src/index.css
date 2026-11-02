@@ -637,3 +637,14 @@ body,
 .reset-view:hover {
   background: #f0f2f4;
 }
+
+.map-message {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding: 1rem;
+  color: #5f676f;
+  text-align: center;
+}

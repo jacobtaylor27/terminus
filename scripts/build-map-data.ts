@@ -79,7 +79,9 @@ const features = source.features.map((feature) => {
 })
 
 const collection: FeatureCollection = { type: 'FeatureCollection', features }
-const world = topology({ shapes: collection }, 1e5)
+// Coordinates snap to a 50,000-step grid, about 0.007° of longitude: under a pixel even at the map's
+// deepest zoom, and a finer grid only makes the file bigger.
+const world = topology({ shapes: collection }, 5e4)
 const shapes = world.objects.shapes as GeometryCollection
 
 // Merge features that now share an id, so each Country is one shape with no border inside it.

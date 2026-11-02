@@ -4,9 +4,9 @@ import { select } from 'd3-selection'
 import 'd3-transition' // adds selection.transition(), which animates the reset
 import { type D3ZoomEvent, type ZoomBehavior, zoom, zoomIdentity } from 'd3-zoom'
 import type { Polygon } from 'geojson'
-import { type PointerEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { type PointerEvent, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import type { Place } from '../quiz/quiz.ts'
-import { type MapShape, mapShapes } from './mapShapes.ts'
+import { type MapShape, fetchMapShapes } from './mapShapes.ts'
 
 const WIDTH = 960
 const SPHERE: GeoPermissibleObjects = { type: 'Sphere' }
@@ -21,15 +21,63 @@ const projection = geoNaturalEarth1().fitWidth(WIDTH, SPHERE)
 const path = geoPath(projection)
 const HEIGHT = Math.ceil(path.bounds(SPHERE)[1][1])
 
-// The projection never changes, so every shape's outline and marker is computed once.
 const spherePath = path(SPHERE) ?? ''
-const shapePaths = mapShapes.map((shape) => ({ id: shape.id, d: path(shape) ?? '' }))
-const shapePathsById = new Map(shapePaths.map(({ id, d }) => [id, d]))
-const markers = mapShapes.flatMap((shape) => {
-  const position = markerPosition(shape)
-  return position ? [{ id: shape.id, x: position[0], y: position[1] }] : []
-})
-const markersById = new Map(markers.map((marker) => [marker.id, marker]))
+
+interface Marker {
+  id: string
+  x: number
+  y: number
+}
+
+// Every shape's outline and marker. The projection never changes, so they are computed once, when
+// the map data arrives.
+interface MapGeometry {
+  shapePaths: { id: string; d: string }[]
+  shapePathsById: ReadonlyMap<string, string>
+  markers: Marker[]
+  markersById: ReadonlyMap<string, Marker>
+}
+
+function geometryOf(shapes: MapShape[]): MapGeometry {
+  const shapePaths = shapes.map((shape) => ({ id: shape.id, d: path(shape) ?? '' }))
+  const markers = shapes.flatMap((shape) => {
+    const position = markerPosition(shape)
+    return position ? [{ id: shape.id, x: position[0], y: position[1] }] : []
+  })
+  return {
+    shapePaths,
+    shapePathsById: new Map(shapePaths.map(({ id, d }) => [id, d])),
+    markers,
+    markersById: new Map(markers.map((marker) => [marker.id, marker])),
+  }
+}
+
+// The map's geometry once it has loaded, or null if its data couldn't be fetched; undefined until then.
+let loadedGeometry: MapGeometry | null | undefined
+let loadStarted = false
+const loadListeners = new Set<() => void>()
+
+// Starts loading the map, unless it already has. The app calls this as it starts, so the map is
+// normally ready before the player starts an Attempt.
+export function loadWorldMap() {
+  if (loadStarted) return
+  loadStarted = true
+  fetchMapShapes()
+    .then(geometryOf)
+    .catch(() => null)
+    .then((geometry) => {
+      loadedGeometry = geometry
+      for (const listener of loadListeners) listener()
+    })
+}
+
+function subscribeToLoad(listener: () => void) {
+  loadListeners.add(listener)
+  loadWorldMap()
+  return () => {
+    loadListeners.delete(listener)
+  }
+}
 
 // The middle of the shape's largest piece of land, if even that is too small to see.
 function markerPosition(shape: MapShape): [number, number] | undefined {
@@ -70,7 +118,27 @@ interface Hover {
   y: number
 }
 
-export function WorldMap({
+export function WorldMap(props: WorldMapProps) {
+  const geometry = useSyncExternalStore(subscribeToLoad, () => loadedGeometry)
+  if (geometry === undefined) return <MapMessage>Loading the map…</MapMessage>
+  if (geometry === null) return <MapMessage>The map couldn't load. Reload the page to try again.</MapMessage>
+  return <LoadedWorldMap {...props} geometry={geometry} />
+}
+
+// Stands in the map's place while it loads, or if it can't.
+function MapMessage({ children }: { children: string }) {
+  return (
+    <div className="world-map">
+      <p className="map-message">{children}</p>
+    </div>
+  )
+}
+
+interface LoadedWorldMapProps extends WorldMapProps {
+  geometry: MapGeometry
+}
+
+function LoadedWorldMap({
   countries,
   foundIds,
   missedIds,
@@ -78,7 +146,8 @@ export function WorldMap({
   pulse,
   flash,
   unfoundHighlight,
-}: WorldMapProps) {
+  geometry,
+}: LoadedWorldMapProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const svgRef = useRef<SVGSVGElement>(null)
   const zoomRef = useRef<ZoomBehavior<SVGSVGElement, unknown>>(null)
@@ -118,7 +187,7 @@ export function WorldMap({
   // Re-rendered only when the Found or Missed Countries change, not on every zoom or pointer move.
   const shapeElements = useMemo(
     () =>
-      shapePaths.map(({ id, d }) => (
+      geometry.shapePaths.map(({ id, d }) => (
         <path
           key={id}
           d={d}
@@ -127,7 +196,7 @@ export function WorldMap({
           onPointerLeave={endHover}
         />
       )),
-    [countryIds, foundIds, missedIds, hoverAt, endHover],
+    [geometry, countryIds, foundIds, missedIds, hoverAt, endHover],
   )
 
   const markerRadius = MARKER_RADIUS / transform.k
@@ -149,7 +218,7 @@ export function WorldMap({
         <g transform={transform.toString()}>
           <path className="sphere" d={spherePath} />
           {shapeElements}
-          {markers
+          {geometry.markers
             .filter(({ id }) => countryIds.has(id))
             .map(({ id, x, y }) => (
               <circle
@@ -164,9 +233,27 @@ export function WorldMap({
             ))}
           {/* Overlays are drawn on top of every shape so their outlines aren't hidden by
               neighbours'; the keys remount them so their animations replay. */}
-          {flash && <Overlay key={`flash-${flash.sequence}`} kind="flash" id={flash.id} markerRadius={markerRadius} />}
-          {pulse && <Overlay key={`pulse-${pulse.sequence}`} kind="pulse" id={pulse.id} markerRadius={markerRadius} />}
-          {hover && hoveredName && <Overlay kind="hovered" id={hover.id} markerRadius={markerRadius} />}
+          {flash && (
+            <Overlay
+              key={`flash-${flash.sequence}`}
+              kind="flash"
+              id={flash.id}
+              geometry={geometry}
+              markerRadius={markerRadius}
+            />
+          )}
+          {pulse && (
+            <Overlay
+              key={`pulse-${pulse.sequence}`}
+              kind="pulse"
+              id={pulse.id}
+              geometry={geometry}
+              markerRadius={markerRadius}
+            />
+          )}
+          {hover && hoveredName && (
+            <Overlay kind="hovered" id={hover.id} geometry={geometry} markerRadius={markerRadius} />
+          )}
         </g>
       </svg>
       {hover && hoveredName && (
@@ -184,15 +271,16 @@ export function WorldMap({
 interface OverlayProps {
   kind: 'flash' | 'pulse' | 'hovered'
   id: string
+  geometry: MapGeometry
   markerRadius: number
 }
 
 // A Country's whole shape, overseas parts included, and its marker if it has one.
-function Overlay({ kind, id, markerRadius }: OverlayProps) {
-  const marker = markersById.get(id)
+function Overlay({ kind, id, geometry, markerRadius }: OverlayProps) {
+  const marker = geometry.markersById.get(id)
   return (
     <g className={`overlay ${kind}`}>
-      <path d={shapePathsById.get(id)} />
+      <path d={geometry.shapePathsById.get(id)} />
       {marker && <circle cx={marker.x} cy={marker.y} r={markerRadius} />}
     </g>
   )

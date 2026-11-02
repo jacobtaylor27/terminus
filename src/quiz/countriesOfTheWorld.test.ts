@@ -1,11 +1,13 @@
 import { geoContains } from 'd3-geo'
 import { describe, expect, it } from 'vitest'
 import { startAttempt } from '../attempt/attempt.ts'
-import { mapShapes } from '../map/mapShapes.ts'
+import { mapShapesFrom } from '../map/mapShapes.ts'
+import world from '../map/world-50m.json'
 import { countriesOfTheWorld } from './countriesOfTheWorld.ts'
 import { acceptedNames } from './quiz.ts'
 
 const countryIds = countriesOfTheWorld.places.map((place) => place.id)
+const mapShapes = mapShapesFrom(world)
 
 const shapeIdsAt = (longitude: number, latitude: number) =>
   mapShapes.filter((shape) => geoContains(shape, [longitude, latitude])).map((shape) => shape.id)
