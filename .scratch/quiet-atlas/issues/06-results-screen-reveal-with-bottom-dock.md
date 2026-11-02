@@ -42,3 +42,10 @@ In a window narrower than 1024 px, the dock becomes a strip under the map, and t
 - [ ] Checked in the browser at the full-world view for 1280×633, 1366×633, 1440×789, 1536×731, 1920×947, 1024×649, 900×600, 768×1024, 390×844 and 360×740. The dock or strip covers no land; at 1280 and 1366, Chile comes within about 12 px but stays clear
 - [ ] Checked with and without the "New best!" badge, and with each ending (Completed, Time's up, Gave up)
 - [ ] The palette check and the full test suite stay green
+
+## Comments
+
+**2026-11-02, during implementation.** Two changes from the criteria above:
+
+- **A top strip in narrow windows.** At the user's request, below 1024 px the strip above the map has three parts: Back to Quizzes at the left, the Quiz title over the ending in the centre, and Play again at the right. Below 480 px they don't fit side by side, so the two buttons take a row above the heading. The strip under the map has the legend at the left, the Score centred, and the Time and Timer at the right, with the "New best!" badge just right of the Score. Below 600 px, the Score and badge keep the first row and the legend and the Time and Timer move to a second. The wide one-row dock is unchanged.
+- **Reset view sits just above the dock at 1024–1279 px.** At those widths the one-row dock (up to 993 px wide) reaches the bottom-right corner and covered Reset view. From 1280 px up, Reset view stays in its corner.
