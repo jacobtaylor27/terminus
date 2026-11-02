@@ -143,9 +143,6 @@ export function AttemptScreen({ quiz, mode, timer, onEnd }: AttemptScreenProps) 
           <button type="button" className="pause-button" onClick={handlePause}>
             Pause
           </button>
-          <button type="button" className="give-up-button" onClick={handleGiveUp}>
-            Give up
-          </button>
         </header>
         <WorldMap
           countries={quiz.places}
@@ -173,9 +170,15 @@ export function AttemptScreen({ quiz, mode, timer, onEnd }: AttemptScreenProps) 
               <dd>{clockText}</dd>
             </div>
           </dl>
-          <button type="button" className="start-button" autoFocus onClick={handleResume}>
-            Resume
-          </button>
+          {/* Give up is only reached from here, so ending an Attempt takes a Pause first. */}
+          <div className="pause-actions">
+            <button type="button" className="start-button" autoFocus onClick={handleResume}>
+              Resume
+            </button>
+            <button type="button" className="give-up-button" onClick={handleGiveUp}>
+              Give up
+            </button>
+          </div>
         </section>
       )}
     </div>
