@@ -1,4 +1,4 @@
-import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react'
+import { type KeyboardEvent, useEffect, useId, useMemo, useRef, useState } from 'react'
 import {
   type AttemptState,
   type EndedAttemptState,
@@ -33,6 +33,7 @@ export function AttemptScreen({ quiz, mode, timer, onEnd }: AttemptScreenProps) 
   // The Unfound Highlight is only a way of looking at the map, so the Attempt never knows of it.
   const [unfoundHighlight, setUnfoundHighlight] = useState(false)
   const answerBoxRef = useRef<HTMLInputElement>(null)
+  const promptId = useId()
   // A tick and the player can both find the Attempt ended before the Results show, so the end is
   // reported only the first time, and the Attempt saved only once.
   const endReported = useRef(false)
@@ -114,10 +115,19 @@ export function AttemptScreen({ quiz, mode, timer, onEnd }: AttemptScreenProps) 
       {/* Under the Pause overlay, the panels and map can't be focused, typed into or clicked. */}
       <div className="attempt-play" inert={paused}>
         <div className="frosted-panel answer-panel">
+          {/* In Cued Recall, the Prompt sits just above the answer box, so the player reads it where
+              they type. It is read out as each one appears. */}
+          {state.prompt && (
+            <p id={promptId} className="prompt" aria-live="polite">
+              <span className="small-label">{quiz.promptLabel}</span>
+              <span className="prompt-clue">{state.prompt.prompt}</span>
+            </p>
+          )}
           <input
             ref={answerBoxRef}
             className="answer-box"
             aria-label="Answer"
+            aria-describedby={state.prompt ? promptId : undefined}
             placeholder="Type an answer"
             autoComplete="off"
             spellCheck={false}

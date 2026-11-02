@@ -120,13 +120,14 @@ body,
   backdrop-filter: blur(8px) saturate(1.2);
 }
 
-/* Display text is set in the serif: the titles and headings, and the Score figures. */
+/* Display text is set in the serif: the titles and headings, the Score figures and the Prompt. */
 .app-title,
 .page-heading,
 .quiz-title,
 .pause-title,
 .results-ending,
-.score-figure {
+.score-figure,
+.prompt-clue {
   font-family: var(--display-font);
   font-weight: 600;
 }
@@ -313,9 +314,12 @@ body,
   font-weight: 600;
 }
 
+/* Options side by side all stretch to the tallest one's height. A shorter one keeps its description
+   right under its name, and leaves the spare height empty below. */
 .mode-option {
   display: grid;
   grid-template-columns: auto 1fr;
+  align-content: start;
   column-gap: 0.5rem;
   width: 16rem;
   padding: 0.75rem 1rem;
@@ -494,6 +498,19 @@ body,
   align-items: center;
   gap: 0.5rem;
   padding: 0.45rem;
+}
+
+/* The small label over the Prompt's clue, both in line with the text typed in the answer box. */
+.prompt {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0.1rem 0.8rem 0.45rem;
+}
+
+.prompt-clue {
+  font-size: 1.5rem;
+  line-height: 1.2;
 }
 
 .answer-box {

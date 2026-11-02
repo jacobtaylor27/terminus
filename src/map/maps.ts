@@ -48,9 +48,10 @@ const SPHERE: GeoPermissibleObjects = { type: 'Sphere' }
 const OVAL_MARGIN: Margin = { top: 1, right: 1, bottom: 1, left: 1 }
 
 // Room above and below the States, so the Attempt screen's floating panels sit over empty paper at
-// common laptop window sizes: the Score and the controls above Washington and Maine, and the answer box
-// under Texas. None at the sides, which would only shrink the States in tall windows and on phones.
-const US_MARGIN: Margin = { top: 100, right: 0, bottom: 120, left: 0 }
+// common laptop window sizes: the Score and the controls above Washington and Maine, and the answer box,
+// with Cued Recall's Prompt over it, under Texas and Hawaii. None at the sides, which would only shrink
+// the States in tall windows and on phones.
+const US_MARGIN: Margin = { top: 100, right: 0, bottom: 200, left: 0 }
 
 export const maps: Record<MapId, MapDefinition> = {
   world: {

@@ -7,8 +7,9 @@ import type { Quiz } from './quiz.ts'
 export const usStateCapitals: Quiz = {
   id: 'us-state-capitals',
   title: 'US State Capitals',
-  modes: ['free-recall'],
+  modes: ['free-recall', 'cued-recall'],
   map: 'us-states',
+  promptLabel: 'Capital of',
   places: [
     { id: 'AL', name: 'Montgomery', prompt: 'Alabama' },
     { id: 'AK', name: 'Juneau', prompt: 'Alaska' },

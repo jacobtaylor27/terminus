@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { type Attempt, hasEnded, startAttempt, type TimerSetting } from '../attempt/attempt.ts'
 import { countriesOfTheWorld } from '../quiz/countriesOfTheWorld.ts'
 import type { Quiz } from '../quiz/quiz.ts'
+import { usStateCapitals } from '../quiz/usStateCapitals.ts'
 import { inMemoryStorage, openRecords, type Records } from './records.ts'
 
 // A clock that stands still until the test moves it on, starting from an arbitrary moment.
@@ -174,6 +175,27 @@ describe('Personal Best', () => {
     expect(capitals.newBest).toBe(true)
     expect(bestFor(records)).toMatchObject({ score: 40, total: 197 })
     expect(records.personalBest(capitalsOfAfrica, 'free-recall', null)).toMatchObject({ score: 1, total: 2 })
+  })
+
+  it('is kept for each Mode apart, so a Cued Recall Attempt never affects a Free Recall Personal Best', () => {
+    const records = openRecords(inMemoryStorage(), testClock().now)
+    const cuedRecall = startAttempt(usStateCapitals, 'cued-recall', testClock().now)
+    for (let answered = 0; answered < 30; answered++) {
+      const { prompt } = cuedRecall.state()
+      if (!prompt) throw new Error('The Cued Recall Attempt has no Prompt')
+      cuedRecall.inputChanged(prompt.name)
+    }
+    cuedRecall.giveUp()
+    const freeRecall = startAttempt(usStateCapitals, 'free-recall', testClock().now)
+    for (const place of usStateCapitals.places.slice(0, 10)) freeRecall.inputChanged(place.name)
+    freeRecall.giveUp()
+
+    const cued = records.save(usStateCapitals, 'cued-recall', endedState(cuedRecall))
+    const free = records.save(usStateCapitals, 'free-recall', endedState(freeRecall))
+
+    expect([cued.newBest, free.newBest]).toEqual([true, true])
+    expect(records.personalBest(usStateCapitals, 'cued-recall', null)).toMatchObject({ mode: 'cued-recall', score: 30 })
+    expect(records.personalBest(usStateCapitals, 'free-recall', null)).toMatchObject({ mode: 'free-recall', score: 10 })
   })
 })
 

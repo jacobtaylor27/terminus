@@ -1,8 +1,12 @@
-export type Mode = 'free-recall'
+export type Mode = 'free-recall' | 'cued-recall'
 
 // How each Mode is presented to the player when choosing one.
 export const modeDetails: Record<Mode, { name: string; description: string }> = {
   'free-recall': { name: 'Free Recall', description: 'Type every answer you can think of, in any order.' },
+  'cued-recall': {
+    name: 'Cued Recall',
+    description: "Answer one prompt at a time, in a random order. Skip any you're stuck on.",
+  },
 }
 
 export interface Place {
@@ -28,4 +32,6 @@ export interface Quiz {
   modes: Mode[]
   // The map the Quiz is played on.
   map: MapId
+  // In Cued Recall, the small label over each Prompt, such as "Capital of".
+  promptLabel?: string
 }

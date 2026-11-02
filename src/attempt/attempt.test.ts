@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { countriesOfTheWorld } from '../quiz/countriesOfTheWorld.ts'
-import { type Attempt, type Clock, hasEnded, startAttempt } from './attempt.ts'
+import type { Place } from '../quiz/quiz.ts'
+import { usStateCapitals } from '../quiz/usStateCapitals.ts'
+import { type Attempt, type Clock, hasEnded, type Random, startAttempt, type TimerSetting } from './attempt.ts'
 
 const start = (clock: Clock = () => 0) => startAttempt(countriesOfTheWorld, 'free-recall', clock)
 
@@ -652,5 +654,238 @@ describe('Aliases', () => {
       place: { name: 'Myanmar' },
     })
     expect(attempt.state().score).toBe(1)
+  })
+})
+
+// A source of randomness that gives the same numbers for the same seed, so a test fixes the order of
+// the Prompts: the Park–Miller generator.
+function seededRandom(seed: number) {
+  let n = seed
+  return () => (n = (n * 16_807) % 2_147_483_647) / 2_147_483_647
+}
+
+// Starts a Cued Recall Attempt of US State Capitals, its Prompts ordered by the given randomness.
+const startCued = ({
+  random = seededRandom(1),
+  clock = () => 0,
+  timerMs = null,
+}: { random?: Random; clock?: Clock; timerMs?: TimerSetting } = {}) =>
+  startAttempt(usStateCapitals, 'cued-recall', clock, timerMs, random)
+
+// The current Prompt, failing the test if there is none.
+function currentPrompt(attempt: Attempt): Place {
+  const { prompt } = attempt.state()
+  if (!prompt) throw new Error(`The ${attempt.state().status} Attempt has no Prompt`)
+  return prompt
+}
+
+// Answers the given number of Prompts in turn, and returns the capitals they asked for, in order.
+function answerPrompts(attempt: Attempt, count: number): Place[] {
+  const asked: Place[] = []
+  for (let answered = 0; answered < count; answered++) {
+    const prompt = currentPrompt(attempt)
+    asked.push(prompt)
+    attempt.inputChanged(prompt.name)
+  }
+  return asked
+}
+
+// The States a whole Attempt's Prompts ask about, in order.
+const promptOrder = (attempt: Attempt) =>
+  answerPrompts(attempt, usStateCapitals.places.length).map((place) => place.id)
+
+// Answers Prompts in turn until the given State's is current.
+function answerPromptsUntil(attempt: Attempt, stateId: string) {
+  for (let answered = 0; currentPrompt(attempt).id !== stateId; answered++) {
+    if (answered === usStateCapitals.places.length) throw new Error(`${stateId} was never prompted`)
+    attempt.inputChanged(currentPrompt(attempt).name)
+  }
+}
+
+// A capital whose State isn't the given one's.
+function capitalOtherThan(place: Place): Place {
+  const other = usStateCapitals.places.find((capital) => capital !== place)
+  if (!other) throw new Error(`There is no capital other than ${place.name}`)
+  return other
+}
+
+describe('a Cued Recall Attempt of US State Capitals', () => {
+  it('asks for every capital once, one Prompt at a time, in an order set by the randomness it is given', () => {
+    const order = promptOrder(startCued({ random: seededRandom(1) }))
+
+    expect(new Set(order).size).toBe(50)
+    expect(order).not.toEqual(usStateCapitals.places.map((place) => place.id))
+    expect(promptOrder(startCued({ random: seededRandom(1) }))).toEqual(order)
+    expect(promptOrder(startCued({ random: seededRandom(2) }))).not.toEqual(order)
+  })
+
+  it("accepts the current Prompt's capital, Finding it, and then asks for the next", () => {
+    const attempt = startCued()
+    const prompt = currentPrompt(attempt)
+
+    expect(attempt.inputChanged(prompt.name)).toEqual({ kind: 'accepted', place: prompt })
+    expect(attempt.state()).toMatchObject({ score: 1, found: [prompt], unfound: expect.not.arrayContaining([prompt]) })
+    expect(currentPrompt(attempt)).not.toBe(prompt)
+  })
+
+  it("does not accept another State's capital, and keeps the same Prompt", () => {
+    const attempt = startCued()
+    const prompt = currentPrompt(attempt)
+    const before = attempt.state()
+
+    expect(attempt.inputChanged(capitalOtherThan(prompt).name)).toEqual({ kind: 'no-match' })
+    expect(attempt.state()).toEqual(before)
+    expect(currentPrompt(attempt)).toBe(prompt)
+  })
+
+  it.each(['St Paul', 'st. paul', 'SAINT PAUL'])(
+    'accepts "%s" for Saint Paul when Minnesota is the Prompt, by its Alias and ignoring case and punctuation',
+    (text) => {
+      const attempt = startCued()
+      answerPromptsUntil(attempt, 'MN')
+
+      expect(attempt.inputChanged(text)).toMatchObject({ kind: 'accepted', place: { name: 'Saint Paul' } })
+    },
+  )
+
+  it("treats a capital already Found as no match, never as already Found, and keeps the same Prompt", () => {
+    const attempt = startCued()
+    const [capitalFound] = answerPrompts(attempt, 1)
+    const before = attempt.state()
+
+    expect(attempt.inputChanged(capitalFound.name)).toEqual({ kind: 'no-match' })
+    expect(attempt.state()).toEqual(before)
+  })
+})
+
+describe('pressing Enter in Cued Recall', () => {
+  it("on another State's capital counts a Wrong Guess and keeps the same Prompt", () => {
+    const attempt = startCued()
+    const prompt = currentPrompt(attempt)
+    const otherCapital = capitalOtherThan(prompt).name
+    attempt.inputChanged(otherCapital)
+
+    expect(attempt.commit(otherCapital)).toEqual({ kind: 'wrong-guess' })
+    expect(attempt.state()).toMatchObject({ wrongGuessCount: 1, score: 0, prompt })
+  })
+
+  it('on a capital already Found counts a Wrong Guess', () => {
+    const attempt = startCued()
+    const [capitalFound] = answerPrompts(attempt, 1)
+    attempt.inputChanged(capitalFound.name)
+
+    expect(attempt.commit(capitalFound.name)).toEqual({ kind: 'wrong-guess' })
+    expect(attempt.state()).toMatchObject({ wrongGuessCount: 1, score: 1 })
+  })
+
+  it.each(['Los Angeles', 'California', 'Sacra'])('on "%s", which is no capital, counts a Wrong Guess', (text) => {
+    const attempt = startCued()
+    attempt.inputChanged(text)
+
+    expect(attempt.commit(text)).toEqual({ kind: 'wrong-guess' })
+    expect(attempt.state().wrongGuessCount).toBe(1)
+  })
+
+  it("on the current Prompt's capital is not a Wrong Guess, as it is accepted the moment it's typed", () => {
+    const attempt = startCued()
+
+    expect(attempt.commit(currentPrompt(attempt).name)).toEqual({ kind: 'nothing' })
+    expect(attempt.state().wrongGuessCount).toBe(0)
+  })
+
+  it.each(['', '   '])('on an empty answer box ("%s") does nothing', (text) => {
+    const attempt = startCued()
+    answerPrompts(attempt, 1)
+    const before = attempt.state()
+
+    expect(attempt.commit(text)).toEqual({ kind: 'nothing' })
+    expect(attempt.state()).toEqual(before)
+  })
+})
+
+describe('a Cued Recall Attempt that is paused', () => {
+  it('keeps its Prompt, but accepts no answer and counts no Wrong Guess until it resumes', () => {
+    const attempt = startCued()
+    answerPrompts(attempt, 1)
+    const prompt = currentPrompt(attempt)
+    attempt.pause()
+    const before = attempt.state()
+
+    expect(before.prompt).toBe(prompt)
+    expect(attempt.inputChanged(prompt.name)).toEqual({ kind: 'no-match' })
+    expect(attempt.commit(capitalOtherThan(prompt).name)).toEqual({ kind: 'nothing' })
+    expect(attempt.state()).toEqual(before)
+
+    attempt.resume()
+    expect(attempt.inputChanged(prompt.name)).toEqual({ kind: 'accepted', place: prompt })
+  })
+})
+
+describe('a Cued Recall Attempt that has ended', () => {
+  it('ends as Completed the moment the 50th capital is Found, with nothing Missed and no Prompt', () => {
+    const clock = testClock()
+    const attempt = startCued({ clock: clock.now })
+    for (let answered = 0; answered < 49; answered++) {
+      clock.advance(1_000)
+      attempt.inputChanged(currentPrompt(attempt).name)
+    }
+    const lastPrompt = currentPrompt(attempt)
+    expect(attempt.state()).toMatchObject({ status: 'in-progress', score: 49, unfound: [lastPrompt] })
+
+    clock.advance(1_000)
+    expect(attempt.inputChanged(lastPrompt.name)).toEqual({ kind: 'accepted', place: lastPrompt })
+
+    expect(endedState(attempt)).toMatchObject({
+      status: 'completed',
+      score: 50,
+      missed: [],
+      elapsedMs: 50_000,
+      prompt: null,
+    })
+  })
+
+  it("ends as Time's up when the Timer runs out, with every Unfound capital Missed and no Prompt", () => {
+    const clock = testClock()
+    const attempt = startCued({ clock: clock.now, timerMs: 10 * 60_000 })
+    answerPrompts(attempt, 3)
+    const prompt = currentPrompt(attempt)
+
+    clock.advance(10 * 60_000)
+
+    const state = endedState(attempt)
+    expect(state).toMatchObject({ status: 'times-up', score: 3, prompt: null })
+    expect(state.missed).toHaveLength(47)
+    expect(state.missed).toContain(prompt)
+    expect(attempt.inputChanged(prompt.name)).toEqual({ kind: 'no-match' })
+  })
+
+  it('has no Prompt once given up, and accepts no answer and counts no Wrong Guess', () => {
+    const attempt = startCued()
+    answerPrompts(attempt, 1)
+    const prompt = currentPrompt(attempt)
+
+    attempt.giveUp()
+
+    const before = endedState(attempt)
+    expect(before).toMatchObject({ status: 'gave-up', score: 1, prompt: null })
+    expect(attempt.inputChanged(prompt.name)).toEqual({ kind: 'no-match' })
+    expect(attempt.commit('Atlantis')).toEqual({ kind: 'nothing' })
+    expect(attempt.state()).toEqual(before)
+  })
+})
+
+describe('a Free Recall Attempt', () => {
+  it.each([countriesOfTheWorld, usStateCapitals])('of $title has no Prompt, even for a Quiz with prompts', (quiz) => {
+    const attempt = startAttempt(quiz, 'free-recall', () => 0)
+    attempt.inputChanged(quiz.places[0].name)
+
+    expect(attempt.state().prompt).toBeNull()
+  })
+
+  it('accepts any Unfound capital of US State Capitals, whatever its order', () => {
+    const attempt = startAttempt(usStateCapitals, 'free-recall', () => 0)
+
+    expect(attempt.inputChanged('Juneau')).toMatchObject({ kind: 'accepted', place: { id: 'AK' } })
+    expect(attempt.inputChanged('Montgomery')).toMatchObject({ kind: 'accepted', place: { id: 'AL' } })
   })
 })
