@@ -22,11 +22,16 @@ interface Progress {
 }
 
 export type AttemptState =
-  | (Progress & { status: 'in-progress' })
+  | (Progress & { status: 'in-progress' | 'paused' })
   // Once the Attempt has ended, the Countries still Unfound are Missed.
   | (Progress & { status: Ending; missed: Place[] })
 
 export type EndedAttemptState = Extract<AttemptState, { status: Ending }>
+
+// Whether the Attempt has ended, rather than being in progress or paused.
+export function hasEnded(state: AttemptState): state is EndedAttemptState {
+  return state.status !== 'in-progress' && state.status !== 'paused'
+}
 
 export type InputResult =
   | { kind: 'accepted'; place: Place }
@@ -41,6 +46,8 @@ export type CommitResult =
 export interface Attempt {
   inputChanged(text: string): InputResult
   commit(text: string): CommitResult
+  pause(): void
+  resume(): void
   giveUp(): void
   state(): AttemptState
 }
@@ -70,13 +77,20 @@ export function startAttempt(
   )
   const found = new Set<Place>()
   let wrongGuessCount = 0
+  // When the current Pause began, while the Attempt is paused, and the time spent in earlier ones.
+  let pausedAt: number | undefined
+  let pausedMs = 0
   // How the Attempt ended and the time played when it did, once it has.
   let end: { ending: Ending; elapsedMs: number } | undefined
 
-  // The time played by the given moment, which stops when the Attempt ends. Measured between
-  // timestamps, so it stays right however rarely it is read.
+  function isPaused() {
+    return pausedAt !== undefined
+  }
+
+  // The time played by the given moment, which stops while the Attempt is paused and when it ends.
+  // Measured between timestamps, so it stays right however rarely it is read.
   function elapsedAt(now: number) {
-    return end ? end.elapsedMs : now - startedAt
+    return end ? end.elapsedMs : (pausedAt ?? now) - startedAt - pausedMs
   }
 
   // Ends the Attempt as Time's up if the Timer has run out by the given moment, stopping the clock at
@@ -90,7 +104,7 @@ export function startAttempt(
     inputChanged(text) {
       const now = clock()
       endIfTimesUp(now)
-      if (end) return { kind: 'no-match' }
+      if (end || isPaused()) return { kind: 'no-match' }
       const place = placesByAcceptedName.get(normalize(text))
       if (!place) return { kind: 'no-match' }
       if (found.has(place)) return { kind: 'already-found', place }
@@ -101,7 +115,7 @@ export function startAttempt(
 
     commit(text) {
       endIfTimesUp(clock())
-      if (end || text.trim() === '') return { kind: 'nothing' }
+      if (end || isPaused() || text.trim() === '') return { kind: 'nothing' }
       const place = placesByAcceptedName.get(normalize(text))
       if (!place) {
         wrongGuessCount += 1
@@ -110,6 +124,18 @@ export function startAttempt(
       if (found.has(place)) return { kind: 'already-found', place }
       // An Unfound Country is accepted as soon as it is typed, so it never reaches Enter.
       return { kind: 'nothing' }
+    },
+
+    pause() {
+      const now = clock()
+      endIfTimesUp(now)
+      if (!end) pausedAt ??= now
+    },
+
+    resume() {
+      if (end || pausedAt === undefined) return
+      pausedMs += clock() - pausedAt
+      pausedAt = undefined
     },
 
     giveUp() {
@@ -134,7 +160,7 @@ export function startAttempt(
       }
       return end
         ? { ...progress, status: end.ending, missed: unfound }
-        : { ...progress, status: 'in-progress' }
+        : { ...progress, status: isPaused() ? 'paused' : 'in-progress' }
     },
   }
 }

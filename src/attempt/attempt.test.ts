@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { countriesOfTheWorld } from '../quiz/countriesOfTheWorld.ts'
-import { type Attempt, type Clock, startAttempt } from './attempt.ts'
+import { type Attempt, type Clock, hasEnded, startAttempt } from './attempt.ts'
 
 const start = (clock: Clock = () => 0) => startAttempt(countriesOfTheWorld, 'free-recall', clock)
 
@@ -45,10 +45,10 @@ function findEveryCountry(attempt: Attempt) {
   for (const place of countriesOfTheWorld.places) attempt.inputChanged(place.name)
 }
 
-// The state of an Attempt that has ended, failing the test if it is still in progress.
+// The state of an Attempt that has ended, failing the test if it is still in progress or paused.
 function endedState(attempt: Attempt) {
   const state = attempt.state()
-  if (state.status === 'in-progress') throw new Error('The Attempt is still in progress')
+  if (!hasEnded(state)) throw new Error(`The Attempt is ${state.status}, not ended`)
   return state
 }
 
@@ -198,6 +198,126 @@ describe('the Timer', () => {
       elapsedMs: 600_000,
       timer: { durationMs: 600_000, remainingMs: 0 },
     })
+  })
+})
+
+describe('Pause', () => {
+  it('pauses the Attempt until the player resumes it', () => {
+    const attempt = start()
+
+    attempt.pause()
+    expect(attempt.state().status).toBe('paused')
+
+    attempt.resume()
+    expect(attempt.state().status).toBe('in-progress')
+  })
+
+  it('stops the stopwatch, which carries on from where it stopped when the Attempt resumes', () => {
+    const clock = testClock()
+    const attempt = start(clock.now)
+    clock.advance(60_000)
+
+    attempt.pause()
+    clock.advance(5 * 60_000)
+    expect(attempt.state().elapsedMs).toBe(60_000)
+
+    attempt.resume()
+    clock.advance(30_000)
+    expect(attempt.state().elapsedMs).toBe(90_000)
+  })
+
+  it("holds the Timer's countdown, so Time's up cannot come while the Attempt is paused", () => {
+    const clock = testClock()
+    const attempt = startWithTimer(10, clock.now)
+    clock.advance(9 * 60_000)
+
+    attempt.pause()
+    clock.advance(20 * 60_000)
+    expect(attempt.state()).toMatchObject({
+      status: 'paused',
+      elapsedMs: 9 * 60_000,
+      timer: { durationMs: 600_000, remainingMs: 60_000 },
+    })
+
+    attempt.resume()
+    clock.advance(59_999)
+    expect(attempt.state()).toMatchObject({ status: 'in-progress', timer: { remainingMs: 1 } })
+
+    clock.advance(1)
+    expect(attempt.state()).toMatchObject({ status: 'times-up', elapsedMs: 600_000 })
+  })
+
+  it('leaves out the time of every Pause', () => {
+    const clock = testClock()
+    const attempt = start(clock.now)
+    for (let pause = 0; pause < 3; pause++) {
+      clock.advance(10_000)
+      attempt.pause()
+      clock.advance(60_000)
+      attempt.resume()
+    }
+
+    expect(attempt.state().elapsedMs).toBe(30_000)
+  })
+
+  it('accepts no answers and counts no Wrong Guesses while the Attempt is paused', () => {
+    const attempt = start()
+    attempt.inputChanged('Japan')
+    attempt.pause()
+    const before = attempt.state()
+
+    expect(attempt.inputChanged('France')).toEqual({ kind: 'no-match' })
+    expect(attempt.inputChanged('Japan')).toEqual({ kind: 'no-match' })
+    expect(attempt.commit('Japan')).toEqual({ kind: 'nothing' })
+    expect(attempt.commit('Atlantis')).toEqual({ kind: 'nothing' })
+    expect(attempt.state()).toEqual(before)
+  })
+
+  it('accepts answers again once the Attempt resumes', () => {
+    const attempt = start()
+    attempt.pause()
+    attempt.inputChanged('France')
+
+    attempt.resume()
+
+    expect(attempt.inputChanged('France')).toMatchObject({ kind: 'accepted', place: { id: 'FRA' } })
+    expect(attempt.state().score).toBe(1)
+  })
+
+  it("leaves the Attempt ended as Time's up when the player pauses after 0:00 before the Attempt is next read", () => {
+    const clock = testClock()
+    const attempt = startWithTimer(10, clock.now)
+    clock.advance(600_500)
+
+    attempt.pause()
+
+    expect(attempt.state()).toMatchObject({ status: 'times-up', elapsedMs: 600_000 })
+  })
+
+  it('does nothing to an Attempt that has ended', () => {
+    const clock = testClock()
+    const attempt = start(clock.now)
+    clock.advance(60_000)
+    attempt.giveUp()
+    const before = attempt.state()
+
+    attempt.pause()
+    clock.advance(60_000)
+    attempt.resume()
+
+    expect(attempt.state()).toEqual(before)
+  })
+
+  it('ends the Attempt as Gave up, with the time played before the Pause, when the player gives up while paused', () => {
+    const clock = testClock()
+    const attempt = start(clock.now)
+    clock.advance(60_000)
+    attempt.pause()
+    clock.advance(5 * 60_000)
+
+    attempt.giveUp()
+
+    expect(attempt.state()).toMatchObject({ status: 'gave-up', elapsedMs: 60_000 })
   })
 })
 

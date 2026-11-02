@@ -1,7 +1,8 @@
-import { type KeyboardEvent, useEffect, useMemo, useState } from 'react'
+import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react'
 import {
   type AttemptState,
   type EndedAttemptState,
+  hasEnded,
   startAttempt,
   type TimerSetting,
 } from '../attempt/attempt.ts'
@@ -28,15 +29,24 @@ export function AttemptScreen({ quiz, mode, timer, onEnd }: AttemptScreenProps) 
   const [answer, setAnswer] = useState('')
   const [pulse, setPulse] = useState<Cue | null>(null)
   const [flash, setFlash] = useState<Cue | null>(null)
+  const answerBoxRef = useRef<HTMLInputElement>(null)
+  const paused = state.status === 'paused'
+  const clockLabel = state.timer ? 'Time left' : 'Time'
 
   const foundIds = useMemo(() => new Set(state.found.map((place) => place.id)), [state])
+
+  // The answer box has focus when the Attempt starts and whenever it resumes, so the player can type
+  // straight away.
+  useEffect(() => {
+    if (!paused) answerBoxRef.current?.focus()
+  }, [paused])
 
   useEffect(() => {
     const ticker = setInterval(() => {
       const latest = attempt.state()
       // A Timer runs out between answers, so it's a tick that finds the Attempt ended as Time's up.
-      if (latest.status === 'in-progress') setClockText(formatClock(latest))
-      else onEnd(latest)
+      if (hasEnded(latest)) onEnd(latest)
+      else setClockText(formatClock(latest))
     }, TICK_MS)
     return () => clearInterval(ticker)
   }, [attempt, onEnd])
@@ -44,8 +54,12 @@ export function AttemptScreen({ quiz, mode, timer, onEnd }: AttemptScreenProps) 
   // Shows the Attempt's latest state, or its Results once it has ended.
   function showLatest() {
     const latest = attempt.state()
-    if (latest.status === 'in-progress') setState(latest)
-    else onEnd(latest)
+    if (hasEnded(latest)) {
+      onEnd(latest)
+      return
+    }
+    setState(latest)
+    setClockText(formatClock(latest))
   }
 
   function handleAnswerChange(text: string) {
@@ -68,6 +82,16 @@ export function AttemptScreen({ quiz, mode, timer, onEnd }: AttemptScreenProps) 
     showLatest()
   }
 
+  function handlePause() {
+    attempt.pause()
+    showLatest()
+  }
+
+  function handleResume() {
+    attempt.resume()
+    showLatest()
+  }
+
   function handleGiveUp() {
     attempt.giveUp()
     showLatest()
@@ -75,36 +99,63 @@ export function AttemptScreen({ quiz, mode, timer, onEnd }: AttemptScreenProps) 
 
   return (
     <div className="attempt-screen">
-      <header className="attempt-bar">
-        <input
-          className="answer-box"
-          aria-label="Answer"
-          placeholder="Type an answer"
-          autoFocus
-          autoComplete="off"
-          spellCheck={false}
-          value={answer}
-          onChange={(event) => handleAnswerChange(event.target.value)}
-          onKeyDown={handleAnswerKeyDown}
+      {/* Under the Pause overlay, the bar and map can't be focused, typed into or clicked. */}
+      <div className="attempt-play" inert={paused}>
+        <header className="attempt-bar">
+          <input
+            ref={answerBoxRef}
+            className="answer-box"
+            aria-label="Answer"
+            placeholder="Type an answer"
+            autoComplete="off"
+            spellCheck={false}
+            value={answer}
+            onChange={(event) => handleAnswerChange(event.target.value)}
+            onKeyDown={handleAnswerKeyDown}
+          />
+          <output className="score" aria-label="Score">
+            {state.score}/{state.total}
+          </output>
+          <span className="clock" role="timer" aria-label={clockLabel}>
+            {clockText}
+          </span>
+          <button type="button" className="pause-button" onClick={handlePause}>
+            Pause
+          </button>
+          <button type="button" className="give-up-button" onClick={handleGiveUp}>
+            Give up
+          </button>
+        </header>
+        <WorldMap
+          countries={quiz.places}
+          foundIds={foundIds}
+          missedIds={null}
+          tooltips="found"
+          pulse={pulse}
+          flash={flash}
         />
-        <output className="score" aria-label="Score">
-          {state.score}/{state.total}
-        </output>
-        <span className="clock" role="timer" aria-label={state.timer ? 'Time left' : 'Time'}>
-          {clockText}
-        </span>
-        <button type="button" className="give-up-button" onClick={handleGiveUp}>
-          Give up
-        </button>
-      </header>
-      <WorldMap
-        countries={quiz.places}
-        foundIds={foundIds}
-        missedIds={null}
-        tooltips="found"
-        pulse={pulse}
-        flash={flash}
-      />
+      </div>
+      {/* Covers the map and Found answers, so the player can't study them with the clock stopped. */}
+      {paused && (
+        <section className="pause-overlay" aria-label="Paused">
+          <h1 className="pause-title">Paused</h1>
+          <dl className="pause-stats">
+            <div>
+              <dt>Score</dt>
+              <dd>
+                {state.score}/{state.total}
+              </dd>
+            </div>
+            <div>
+              <dt>{clockLabel}</dt>
+              <dd>{clockText}</dd>
+            </div>
+          </dl>
+          <button type="button" className="start-button" autoFocus onClick={handleResume}>
+            Resume
+          </button>
+        </section>
+      )}
     </div>
   )
 }
