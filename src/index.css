@@ -513,9 +513,16 @@ body,
   line-height: 1.2;
 }
 
+/* In Cued Recall, the Skip button sits beside the answer box, as tall as it. */
+.answer-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
 .answer-box {
   box-sizing: border-box;
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   padding: 0.5rem 0.75rem;
   font: inherit;
   font-size: 1.25rem;

@@ -39,7 +39,7 @@ const bestFor = (records: Records, timerMs: TimerSetting = null) =>
   records.personalBest(countriesOfTheWorld, 'free-recall', timerMs)
 
 describe('saving a finished Attempt', () => {
-  it('keeps its Quiz, Mode, Timer setting, Score, time, ending, Wrong Guess count and when it finished', () => {
+  it('keeps its Quiz, Mode, Timer setting, Score, time, ending, Wrong Guess and Skip counts and when it finished', () => {
     const clock = testClock()
     const records = openRecords(inMemoryStorage(), clock.now)
     const attempt = startAttempt(countriesOfTheWorld, 'free-recall', clock.now, 15 * 60_000)
@@ -61,9 +61,22 @@ describe('saving a finished Attempt', () => {
         elapsedMs: 90_000,
         ending: 'gave-up',
         wrongGuessCount: 1,
+        skipCount: 0,
         finishedAt: 1_090_000,
       },
     ])
+  })
+
+  it('keeps the Skip count of a Cued Recall Attempt', () => {
+    const records = openRecords(inMemoryStorage(), testClock().now)
+    const attempt = startAttempt(usStateCapitals, 'cued-recall', testClock().now)
+    attempt.skip()
+    attempt.skip()
+    attempt.giveUp()
+
+    records.save(usStateCapitals, 'cued-recall', endedState(attempt))
+
+    expect(records.history()).toMatchObject([{ mode: 'cued-recall', skipCount: 2, wrongGuessCount: 0 }])
   })
 
   it('keeps every finished Attempt, oldest first, for Records opened later over the same storage', () => {
@@ -220,9 +233,36 @@ describe('the stored data', () => {
           elapsedMs: 90_000,
           ending: 'gave-up',
           wrongGuessCount: 0,
+          skipCount: 0,
           finishedAt: 1_000_000,
         },
       ],
+    })
+  })
+
+  it('reads an Attempt saved before Skips were counted as having none, still in version 1 of the schema', () => {
+    const storage = inMemoryStorage()
+    const savedBeforeSkips = {
+      quizId: 'countries-of-the-world',
+      mode: 'free-recall',
+      timerMs: null,
+      score: 40,
+      total: 197,
+      elapsedMs: 300_000,
+      ending: 'gave-up',
+      wrongGuessCount: 3,
+      finishedAt: 1_000_000,
+    }
+    storage.setItem('terminus.records', JSON.stringify({ version: 1, attempts: [savedBeforeSkips] }))
+    const records = openRecords(storage, testClock().now)
+
+    expect(records.history()).toEqual([{ ...savedBeforeSkips, skipCount: 0 }])
+    expect(bestFor(records)).toMatchObject({ score: 40, skipCount: 0 })
+
+    records.save(countriesOfTheWorld, 'free-recall', gaveUp({ score: 2, elapsedMs: 90_000 }))
+    expect(JSON.parse(storage.getItem('terminus.records') ?? 'null')).toMatchObject({
+      version: 1,
+      attempts: [{ score: 40 }, { score: 2, skipCount: 0 }],
     })
   })
 

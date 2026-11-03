@@ -23,6 +23,8 @@ interface Progress {
   found: Place[]
   unfound: Place[]
   wrongGuessCount: number
+  // How many times the player Skipped a Prompt. Always 0 in Free Recall, which has none.
+  skipCount: number
   // In Cued Recall, the Place the player is being asked for, until the Attempt ends. Null in Free Recall.
   prompt: Place | null
   elapsedMs: number
@@ -55,6 +57,7 @@ export type CommitResult =
 export interface Attempt {
   inputChanged(text: string): InputResult
   commit(text: string): CommitResult
+  skip(): void
   pause(): void
   resume(): void
   giveUp(): void
@@ -100,6 +103,7 @@ export function startAttempt(
   // The first is the current Prompt. Null in Free Recall, which has no Prompts.
   const prompts = mode === 'cued-recall' ? shuffled(quiz.places, random) : null
   let wrongGuessCount = 0
+  let skipCount = 0
   // When the current Pause began, while the Attempt is paused, and the time spent in earlier ones.
   let pausedAt: number | undefined
   let pausedMs = 0
@@ -157,6 +161,15 @@ export function startAttempt(
       return { kind: 'nothing' }
     },
 
+    // In Cued Recall, sends the current Prompt to the back of the queue, so it is asked again after
+    // every other Unfound Place. With one left, it comes straight back. Free Recall has none to Skip.
+    skip() {
+      endIfTimesUp(clock())
+      if (end || isPaused() || !prompts) return
+      prompts.push(...prompts.splice(0, 1))
+      skipCount += 1
+    },
+
     pause() {
       const now = clock()
       endIfTimesUp(now)
@@ -186,6 +199,7 @@ export function startAttempt(
         found: [...found],
         unfound,
         wrongGuessCount,
+        skipCount,
         prompt: end ? null : (prompts?.[0] ?? null),
         elapsedMs,
         timer: timerMs === null ? null : { durationMs: timerMs, remainingMs: timerMs - elapsedMs },

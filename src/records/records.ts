@@ -36,6 +36,8 @@ export interface AttemptRecord {
   elapsedMs: number
   ending: Ending
   wrongGuessCount: number
+  // How many times the player Skipped a Prompt: always 0 in Free Recall.
+  skipCount: number
   // When the Attempt finished, in milliseconds since the epoch.
   finishedAt: number
 }
@@ -54,7 +56,16 @@ const STORAGE_KEY = 'terminus.records'
 // The stored data, with the version of its schema so a later one can migrate it.
 interface StoredRecords {
   version: 1
-  attempts: AttemptRecord[]
+  attempts: StoredAttempt[]
+}
+
+// A finished Attempt as stored. One saved before Skips were counted has no Skip count, which version 1
+// of the schema allows.
+type StoredAttempt = Omit<AttemptRecord, 'skipCount'> & { skipCount?: number }
+
+// A stored Attempt as Records keep it, reading one saved before Skips were counted as having none.
+function readAttempt(stored: StoredAttempt): AttemptRecord {
+  return { ...stored, skipCount: stored.skipCount ?? 0 }
 }
 
 // Records kept in the given storage. They are given a clock to tell when each Attempt finished.
@@ -68,7 +79,9 @@ export function openRecords(storage: RecordStorage, clock: Clock): Records {
     if (text === null) return []
     try {
       const data: { version?: unknown; attempts?: unknown } | null = JSON.parse(text)
-      if (data?.version === 1 && Array.isArray(data.attempts)) return data.attempts as AttemptRecord[]
+      if (data?.version === 1 && Array.isArray(data.attempts)) {
+        return (data.attempts as StoredAttempt[]).map(readAttempt)
+      }
       // There is no version before 1, so any other is a later one.
       return typeof data?.version === 'number' && data.version !== 1 ? null : []
     } catch {
@@ -91,6 +104,7 @@ export function openRecords(storage: RecordStorage, clock: Clock): Records {
         elapsedMs: finalState.elapsedMs,
         ending: finalState.status,
         wrongGuessCount: finalState.wrongGuessCount,
+        skipCount: finalState.skipCount,
         finishedAt: clock(),
       }
       const attempts = storedAttempts()

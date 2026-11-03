@@ -803,6 +803,40 @@ describe('pressing Enter in Cued Recall', () => {
   })
 })
 
+describe('Skipping a Prompt', () => {
+  it('sends it to the back of the queue, to be asked again after every other Unfound capital', () => {
+    const order = promptOrder(startCued({ random: seededRandom(1) }))
+    const attempt = startCued({ random: seededRandom(1) })
+
+    attempt.skip()
+
+    expect(promptOrder(attempt)).toEqual([...order.slice(1), order[0]])
+  })
+
+  it('counts each Skip, and never as a Wrong Guess', () => {
+    const attempt = startCued()
+    expect(attempt.state().skipCount).toBe(0)
+
+    attempt.skip()
+    attempt.skip()
+    attempt.skip()
+
+    expect(attempt.state()).toMatchObject({ skipCount: 3, wrongGuessCount: 0, score: 0 })
+  })
+
+  it('with one Prompt left brings the same Prompt straight back, and still counts', () => {
+    const attempt = startCued()
+    answerPrompts(attempt, 49)
+    const lastPrompt = currentPrompt(attempt)
+
+    attempt.skip()
+
+    expect(attempt.state()).toMatchObject({ status: 'in-progress', prompt: lastPrompt, skipCount: 1 })
+    expect(attempt.inputChanged(lastPrompt.name)).toEqual({ kind: 'accepted', place: lastPrompt })
+    expect(endedState(attempt)).toMatchObject({ status: 'completed', score: 50, skipCount: 1 })
+  })
+})
+
 describe('a Cued Recall Attempt that is paused', () => {
   it('keeps its Prompt, but accepts no answer and counts no Wrong Guess until it resumes', () => {
     const attempt = startCued()
@@ -818,6 +852,19 @@ describe('a Cued Recall Attempt that is paused', () => {
 
     attempt.resume()
     expect(attempt.inputChanged(prompt.name)).toEqual({ kind: 'accepted', place: prompt })
+  })
+
+  it('counts no Skip and keeps its Prompt until it resumes', () => {
+    const attempt = startCued()
+    const prompt = currentPrompt(attempt)
+    attempt.pause()
+    const before = attempt.state()
+
+    attempt.skip()
+
+    expect(attempt.state()).toEqual(before)
+    attempt.resume()
+    expect(attempt.state()).toMatchObject({ prompt, skipCount: 0 })
   })
 })
 
@@ -872,6 +919,26 @@ describe('a Cued Recall Attempt that has ended', () => {
     expect(attempt.commit('Atlantis')).toEqual({ kind: 'nothing' })
     expect(attempt.state()).toEqual(before)
   })
+
+  it('counts no Skip once given up', () => {
+    const attempt = startCued()
+    attempt.giveUp()
+    const before = endedState(attempt)
+
+    attempt.skip()
+
+    expect(attempt.state()).toEqual(before)
+  })
+
+  it("counts no Skip once the Timer has run out, even before anything else reads the clock", () => {
+    const clock = testClock()
+    const attempt = startCued({ clock: clock.now, timerMs: 10 * 60_000 })
+    clock.advance(10 * 60_000)
+
+    attempt.skip()
+
+    expect(endedState(attempt)).toMatchObject({ status: 'times-up', skipCount: 0 })
+  })
 })
 
 describe('a Free Recall Attempt', () => {
@@ -887,5 +954,16 @@ describe('a Free Recall Attempt', () => {
 
     expect(attempt.inputChanged('Juneau')).toMatchObject({ kind: 'accepted', place: { id: 'AK' } })
     expect(attempt.inputChanged('Montgomery')).toMatchObject({ kind: 'accepted', place: { id: 'AL' } })
+  })
+
+  it('has no Prompt to Skip, so a Skip changes nothing and is never counted', () => {
+    const attempt = startAttempt(usStateCapitals, 'free-recall', () => 0)
+    attempt.inputChanged('Juneau')
+    const before = attempt.state()
+
+    attempt.skip()
+
+    expect(attempt.state()).toEqual(before)
+    expect(before.skipCount).toBe(0)
   })
 })

@@ -89,8 +89,21 @@ export function AttemptScreen({ quiz, mode, timer, onEnd }: AttemptScreenProps) 
 
   function handleAnswerKeyDown(event: KeyboardEvent<HTMLInputElement>) {
     if (event.key !== 'Enter' || event.nativeEvent.isComposing) return
+    // In Cued Recall, Enter on an empty answer box is the Skip button's shortcut. Not while the key is
+    // held, so Enter held on a Wrong Guess doesn't Skip the Prompt the player meant to try again.
+    if (state.prompt && answer.trim() === '') {
+      if (!event.repeat) handleSkip()
+      return
+    }
     const result = attempt.commit(answer)
     if (result.kind === 'nothing') return
+    setAnswer('')
+    showLatest()
+  }
+
+  // The next Prompt is asked with an empty answer box, whatever was typed for the one Skipped.
+  function handleSkip() {
+    attempt.skip()
     setAnswer('')
     showLatest()
   }
@@ -123,18 +136,33 @@ export function AttemptScreen({ quiz, mode, timer, onEnd }: AttemptScreenProps) 
               <span className="prompt-clue">{state.prompt.prompt}</span>
             </p>
           )}
-          <input
-            ref={answerBoxRef}
-            className="answer-box"
-            aria-label="Answer"
-            aria-describedby={state.prompt ? promptId : undefined}
-            placeholder="Type an answer"
-            autoComplete="off"
-            spellCheck={false}
-            value={answer}
-            onChange={(event) => handleAnswerChange(event.target.value)}
-            onKeyDown={handleAnswerKeyDown}
-          />
+          <div className="answer-row">
+            <input
+              ref={answerBoxRef}
+              className="answer-box"
+              aria-label="Answer"
+              aria-describedby={state.prompt ? promptId : undefined}
+              placeholder="Type an answer"
+              autoComplete="off"
+              spellCheck={false}
+              value={answer}
+              onChange={(event) => handleAnswerChange(event.target.value)}
+              onKeyDown={handleAnswerKeyDown}
+            />
+            {/* Like the Unfound Highlight, its mousedowns are kept from taking focus, so the player
+                types the next answer straight away. */}
+            {state.prompt && (
+              <button
+                type="button"
+                className="secondary-button"
+                title="Skip: asks for this one again after the others (Enter on an empty box)"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={handleSkip}
+              >
+                Skip
+              </button>
+            )}
+          </div>
         </div>
         <dl className="frosted-panel attempt-stats">
           <div>
