@@ -32,7 +32,7 @@ export function App({ records }: AppProps) {
     case 'quiz-list':
       return (
         <QuizListScreen
-          quizzes={quizCatalog}
+          categories={quizCatalog}
           records={records}
           onChoose={(quiz) => setScreen({ kind: 'attempt-setup', quiz })}
         />

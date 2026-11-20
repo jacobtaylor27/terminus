@@ -5,11 +5,11 @@ import { createRoot } from 'react-dom/client'
 import '@fontsource-variable/newsreader/opsz.css'
 import './index.css'
 import { App } from './App.tsx'
-import { loadMaps } from './map/QuizMap.tsx'
+import { fetchMapData } from './map/QuizMap.tsx'
 import { browserStorage, openRecords } from './records/records.ts'
 
-// The maps aren't needed until an Attempt starts, so they load while the player picks a Quiz.
-loadMaps()
+// The maps aren't needed until an Attempt starts, so their data loads while the player picks a Quiz.
+fetchMapData()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

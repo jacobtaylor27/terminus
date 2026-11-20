@@ -5,8 +5,12 @@ A geography quiz game played on a map. The player picks a quiz and answers by ty
 ## Language
 
 **Quiz**:
-A selectable set of geographic content to be tested on, defined by which places it covers and what is asked about them (e.g. *Countries of the World*, *US State Capitals*, *Capitals of Africa*).
+A selectable set of geographic content to be tested on, defined by which places it covers and what is asked about them (e.g. *Countries of the World*, *Countries of Africa*, *Capitals of Africa*, *US State Capitals*).
 _Avoid_: Game, quiz mode, level
+
+**Category**:
+A heading the Quiz list groups Quizzes under, by what they ask the player to name: *Countries* (*Countries of the World* and each Continent's) or *Capitals* (each Continent's and *US State Capitals*).
+_Avoid_: Genre, section, group
 
 **Mode**:
 The mechanic by which the player answers a Quiz. One of Free Recall, Cued Recall, Locate, or Name.
@@ -43,15 +47,19 @@ _Avoid_: Item, question
 One of the 197 places Terminus treats as countries: the 193 UN member states plus Vatican City, Palestine, Kosovo and Taiwan. Dependent territories and autonomous regions (e.g. Greenland, Puerto Rico, Hong Kong) and breakaway regions (Somaliland, Northern Cyprus) are not Countries of their own; they are part of the Country they belong to.
 _Avoid_: Nation, state (a State is one of the US states)
 
+**Continent**:
+One of the six groups Terminus puts the Countries in, each with a Quiz of its own played on a map of the Continent: Africa, Asia, Europe, North America, Oceania and South America. Every Country is in exactly one. A Country that spans two is in the one most quizzes put it in: Russia and Cyprus in Europe; Turkey, Kazakhstan, Georgia, Armenia and Azerbaijan in Asia; Egypt in Africa. Central America and the Caribbean are in North America.
+_Avoid_: Region
+
 **State**:
 One of the 50 states of the United States. In *US State Capitals*, each State is drawn on the map and named by the Prompt for its capital. Washington, D.C. is not a State.
 
 **Territory**:
-Land on a map that is never an answer. On the world map: land that belongs to no Country, which is Antarctica and the disputed Western Sahara and Siachen Glacier. On the US map: Washington, D.C., which is in no State. A Territory is drawn but is never an answer.
+Land on a map that is never an answer. On the world map: land that belongs to no Country, which is Antarctica and the disputed Western Sahara and Siachen Glacier. On a Continent's map: that land, and every Country of another Continent. On the US map: Washington, D.C., which is in no State. A Territory is drawn in flat grey but is never an answer.
 _Avoid_: Using it for dependent territories, which are part of their Country
 
 **Alias**:
-An alternative name accepted as a correct answer for a place: a short form (USA), another-language name (Ivory Coast / Côte d'Ivoire) or a well-known former name (Burma). Ambiguous colloquial names (America, Holland, England) are not Aliases.
+An alternative name accepted as a correct answer for a place: a short form (USA), another-language name (Ivory Coast / Côte d'Ivoire) or a well-known former name (Burma). Ambiguous colloquial names (America, Holland, England) are not Aliases. For a Country's capital, its other capitals and the city where its government sits are Aliases too (Cape Town and Bloemfontein for Pretoria; The Hague for Amsterdam).
 
 **Pause**:
 A player-initiated halt of an Attempt's clock, during which the map and found answers are hidden and only the Score and time are shown. Leaving the browser tab is not a Pause.

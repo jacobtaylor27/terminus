@@ -1,3 +1,5 @@
+import type { Continent } from './countriesOfTheContinents.ts'
+
 export type Mode = 'free-recall' | 'cued-recall'
 
 // How each Mode is presented to the player when choosing one.
@@ -22,8 +24,8 @@ export function acceptedNames(place: Place): string[] {
   return [place.name, ...(place.aliases ?? [])]
 }
 
-// The maps a Quiz can be played on.
-export type MapId = 'world' | 'us-states'
+// The maps a Quiz can be played on: the world map, the US map, and a map of each Continent.
+export type MapId = 'world' | 'us-states' | Continent
 
 export interface Quiz {
   id: string

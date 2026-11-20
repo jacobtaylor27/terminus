@@ -1,5 +1,6 @@
-import { type FormEvent, useState } from 'react'
+import { type FormEvent, useEffect, useState } from 'react'
 import { DEFAULT_TIMER_MS, type TimerSetting } from '../attempt/attempt.ts'
+import { loadMap } from '../map/QuizMap.tsx'
 import { type Mode, modeDetails, type Quiz } from '../quiz/quiz.ts'
 import { formatTimerTime } from './formatDuration.ts'
 
@@ -19,6 +20,10 @@ export function AttemptSetupScreen({ quiz, onStart, onBack }: AttemptSetupScreen
   const [timerOn, setTimerOn] = useState(false)
   const [timerMinutes, setTimerMinutes] = useState(DEFAULT_TIMER_MINUTES)
   const timerMs = timerMinutes * 60_000
+
+  // The Quiz's map loads while the player sets up the Attempt, once this screen has shown, so it is
+  // ready by the time they press Start.
+  useEffect(() => loadMap(quiz.map), [quiz.map])
 
   function changeTimerBy(minutes: number) {
     setTimerMinutes((current) =>

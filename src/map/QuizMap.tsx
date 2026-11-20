@@ -47,7 +47,20 @@ function geometryOf(definition: MapDefinition, shapes: MapShape[]): MapGeometry 
   }
 }
 
-// Loads one map's data, once, and tells its subscribers when it has.
+// Each map data file, fetched once and shared by every map drawn from it: the world map and each
+// Continent's are all drawn from world-50m.json.
+const shapesByUrl = new Map<string, Promise<MapShape[]>>()
+
+function shapesAt(url: string): Promise<MapShape[]> {
+  let shapes = shapesByUrl.get(url)
+  if (!shapes) {
+    shapes = fetchMapShapes(url)
+    shapesByUrl.set(url, shapes)
+  }
+  return shapes
+}
+
+// Works out one map's geometry from its data, once, and tells its subscribers when it has.
 interface MapLoader {
   // The map's geometry once it has loaded, or null if its data couldn't be fetched; undefined until then.
   geometry(): MapGeometry | null | undefined
@@ -64,7 +77,7 @@ function mapLoader(definition: MapDefinition): MapLoader {
   function load() {
     if (loadStarted) return
     loadStarted = true
-    fetchMapShapes(definition.dataUrl)
+    shapesAt(definition.dataUrl)
       .then((shapes) => geometryOf(definition, shapes))
       .catch(() => null)
       .then((loaded) => {
@@ -86,15 +99,24 @@ function mapLoader(definition: MapDefinition): MapLoader {
   }
 }
 
-const mapLoaders: Record<MapId, MapLoader> = {
-  world: mapLoader(maps.world),
-  'us-states': mapLoader(maps['us-states']),
+const mapLoaders = Object.fromEntries(
+  Object.entries(maps).map(([id, definition]) => [id, mapLoader(definition)]),
+) as Record<MapId, MapLoader>
+
+// Starts fetching every map's data. The app calls this as it starts, so the data has normally arrived
+// before the player starts an Attempt. A map's geometry takes a moment to work out, so it waits until
+// the map is wanted: see loadMap.
+export function fetchMapData() {
+  for (const url of new Set(Object.values(maps).map((definition) => definition.dataUrl))) {
+    // A failed fetch is reported by the map that needs the data, so it isn't reported here as well.
+    shapesAt(url).catch(() => {})
+  }
 }
 
-// Starts loading every map. The app calls this as it starts, so the map is normally ready before the
-// player starts an Attempt.
-export function loadMaps() {
-  for (const loader of Object.values(mapLoaders)) loader.load()
+// Starts loading the map, unless it already has, so it is ready by the time the player starts an
+// Attempt on it. The map loads itself when it is shown if nothing has yet.
+export function loadMap(map: MapId) {
+  mapLoaders[map].load()
 }
 
 // The middle of the shape's largest piece of land, if even that is too small to see.
@@ -175,7 +197,7 @@ function LoadedQuizMap({
   const zoomRef = useRef<ZoomBehavior<SVGSVGElement, unknown>>(null)
   const [transform, setTransform] = useState(zoomIdentity)
   const [hover, setHover] = useState<Hover | null>(null)
-  const { width, height, oval } = geometry.frame
+  const { width, height, edge } = geometry.frame
 
   const placeIds = useMemo(() => new Set(places.map((place) => place.id)), [places])
   const hoverTextsById = useMemo(() => new Map(places.map((place) => [place.id, hoverText(place)])), [places])
@@ -239,10 +261,10 @@ function LoadedQuizMap({
     <div ref={containerRef} className={mapClassName} onMouseDownCapture={(event) => event.preventDefault()}>
       <svg ref={svgRef} viewBox={`0 0 ${width} ${height}`} role="img" aria-label={maps[map].name}>
         <g transform={transform.toString()}>
-          {oval && (
+          {edge && (
             <>
-              <path className="sphere" d={oval.outline} />
-              <path className="grid" d={oval.grid} />
+              <path className="sea" d={edge.outline} />
+              <path className="grid" d={edge.grid} />
             </>
           )}
           {shapeElements}
@@ -259,8 +281,9 @@ function LoadedQuizMap({
                 onPointerLeave={endHover}
               />
             ))}
-          {/* The world oval's edge, over the land that meets it, such as Antarctica. */}
-          {oval && <path className="oval-outline" d={oval.outline} />}
+          {/* The map's edge, over the land that meets it, such as Antarctica on the world map, or land
+              cut off at a Continent's plate. */}
+          {edge && <path className="map-outline" d={edge.outline} />}
           {/* Overlays are drawn on top of every shape so their outlines aren't hidden by
               neighbours'; the keys remount them so their animations replay. */}
           {flash && (

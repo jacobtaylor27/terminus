@@ -1,4 +1,5 @@
 import { DEFAULT_TIMER_MS, type TimerSetting } from '../attempt/attempt.ts'
+import type { QuizCategory } from '../quiz/catalog.ts'
 import { type Mode, modeDetails, type Quiz } from '../quiz/quiz.ts'
 import type { Records } from '../records/records.ts'
 import { formatTimerTime, formatTimeTaken } from './formatDuration.ts'
@@ -15,26 +16,31 @@ const appVersion = __APP_VERSION__
 const REPOSITORY_URL = 'https://github.com/jacobtaylor27/terminus'
 
 interface QuizListScreenProps {
-  quizzes: readonly Quiz[]
+  categories: readonly QuizCategory[]
   records: Records
   onChoose: (quiz: Quiz) => void
 }
 
-export function QuizListScreen({ quizzes, records, onChoose }: QuizListScreenProps) {
+export function QuizListScreen({ categories, records, onChoose }: QuizListScreenProps) {
   return (
     <main className="page home-page">
       <h1 className="app-title">Terminus</h1>
       <h2 className="page-heading">Choose a Quiz</h2>
-      <ul className="quiz-list">
-        {quizzes.map((quiz) => (
-          <li key={quiz.id}>
-            <button type="button" className="quiz-card" onClick={() => onChoose(quiz)}>
-              <span className="quiz-title">{quiz.title}</span>
-              <PersonalBests quiz={quiz} records={records} />
-            </button>
-          </li>
-        ))}
-      </ul>
+      {categories.map((category) => (
+        <section key={category.name} className="quiz-category">
+          <h3 className="small-label quiz-category-name">{category.name}</h3>
+          <ul className="quiz-list">
+            {category.quizzes.map((quiz) => (
+              <li key={quiz.id}>
+                <button type="button" className="quiz-card" onClick={() => onChoose(quiz)}>
+                  <span className="quiz-title">{quiz.title}</span>
+                  <PersonalBests quiz={quiz} records={records} />
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
       <footer className="app-version">
         <a href={`${REPOSITORY_URL}/commit/${appVersion.commit}`} title={`Commit ${appVersion.commit.slice(0, 7)}`}>
           v{appVersion.version} ({appVersion.build})

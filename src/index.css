@@ -6,7 +6,7 @@
   --paper: #fcfbf8; /* the page, panels and the Pause overlay */
   --land: #f4f1ea; /* a Country's or State's fill */
   --land-edge: #8f979f; /* borders between Countries or States */
-  --sea: #cfe0ec; /* the sphere */
+  --sea: #cfe0ec; /* inside the map's edge */
   --territory: #dedbd3; /* a warm grey close to the land, so Territories never look like answers */
   --found: #1f6a6c; /* muted teal */
   --found-tint: #8ecfcc; /* the pulse of a new find */
@@ -210,6 +210,18 @@ body,
 
 .page-heading {
   margin: 0 0 1.5rem;
+}
+
+/* Each Category is its name, over a hairline, above its Quizzes' cards. */
+.quiz-category + .quiz-category {
+  margin-top: 2.5rem;
+}
+
+.quiz-category-name {
+  margin: 0 0 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--hairline);
+  font-size: 0.8125rem;
 }
 
 /* Wide enough that "Countries of the World" fits on one line. */
@@ -442,7 +454,7 @@ body,
 }
 
 /* The map fills the window, and the panels float over it in the empty corners around the world
-   oval or the States. Its own stacking context keeps the panels over the map but under the Pause
+   oval, a Continent's plate or the States. Its own stacking context keeps the panels over the map but under the Pause
    overlay. */
 .attempt-play {
   position: relative;
@@ -877,13 +889,13 @@ body,
   touch-action: none;
 }
 
-.quiz-map .sphere {
+.quiz-map .sea {
   fill: var(--sea);
 }
 
-/* The grid and the oval's outline are hairlines at every zoom, and never catch the pointer. */
+/* The grid and the map's outline are hairlines at every zoom, and never catch the pointer. */
 .quiz-map .grid,
-.quiz-map .oval-outline {
+.quiz-map .map-outline {
   fill: none;
   vector-effect: non-scaling-stroke;
   pointer-events: none;
@@ -894,7 +906,7 @@ body,
   stroke-width: 0.75px;
 }
 
-.quiz-map .oval-outline {
+.quiz-map .map-outline {
   stroke: var(--ink);
   stroke-width: 1px;
 }
