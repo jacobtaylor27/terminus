@@ -5,8 +5,9 @@ import { type D3ZoomEvent, type ZoomBehavior, zoom, zoomIdentity } from 'd3-zoom
 import type { Polygon } from 'geojson'
 import { type PointerEvent, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import type { MapId, Place } from '../quiz/quiz.ts'
+import { type MapLoader, mapLoader, shapesAt } from './mapLoader.ts'
 import { type MapDefinition, type MapFrame, maps } from './maps.ts'
-import { type MapShape, fetchMapShapes } from './mapShapes.ts'
+import type { MapShape } from './mapShapes.ts'
 
 const MAX_ZOOM = 40
 // A marker's radius at full-map zoom. Markers keep this size on screen as the map zooms.
@@ -47,61 +48,13 @@ function geometryOf(definition: MapDefinition, shapes: MapShape[]): MapGeometry 
   }
 }
 
-// Each map data file, fetched once and shared by every map drawn from it: the world map and each
-// Continent's are all drawn from world-50m.json.
-const shapesByUrl = new Map<string, Promise<MapShape[]>>()
-
-function shapesAt(url: string): Promise<MapShape[]> {
-  let shapes = shapesByUrl.get(url)
-  if (!shapes) {
-    shapes = fetchMapShapes(url)
-    shapesByUrl.set(url, shapes)
-  }
-  return shapes
-}
-
-// Works out one map's geometry from its data, once, and tells its subscribers when it has.
-interface MapLoader {
-  // The map's geometry once it has loaded, or null if its data couldn't be fetched; undefined until then.
-  geometry(): MapGeometry | null | undefined
-  subscribe(listener: () => void): () => void
-  // Starts loading the map, unless it already has.
-  load(): void
-}
-
-function mapLoader(definition: MapDefinition): MapLoader {
-  let geometry: MapGeometry | null | undefined
-  let loadStarted = false
-  const listeners = new Set<() => void>()
-
-  function load() {
-    if (loadStarted) return
-    loadStarted = true
-    shapesAt(definition.dataUrl)
-      .then((shapes) => geometryOf(definition, shapes))
-      .catch(() => null)
-      .then((loaded) => {
-        geometry = loaded
-        for (const listener of listeners) listener()
-      })
-  }
-
-  return {
-    geometry: () => geometry,
-    subscribe(listener) {
-      listeners.add(listener)
-      load()
-      return () => {
-        listeners.delete(listener)
-      }
-    },
-    load,
-  }
-}
-
+// Each map's geometry, worked out from its data once it is wanted.
 const mapLoaders = Object.fromEntries(
-  Object.entries(maps).map(([id, definition]) => [id, mapLoader(definition)]),
-) as Record<MapId, MapLoader>
+  Object.entries(maps).map(([id, definition]) => [
+    id,
+    mapLoader(() => shapesAt(definition.dataUrl).then((shapes) => geometryOf(definition, shapes))),
+  ]),
+) as Record<MapId, MapLoader<MapGeometry>>
 
 // Starts fetching every map's data. The app calls this as it starts, so the data has normally arrived
 // before the player starts an Attempt. A map's geometry takes a moment to work out, so it waits until
@@ -162,7 +115,7 @@ interface Hover {
 
 export function QuizMap(props: QuizMapProps) {
   const loader = mapLoaders[props.map]
-  const geometry = useSyncExternalStore(loader.subscribe, loader.geometry)
+  const geometry = useSyncExternalStore(loader.subscribe, loader.current)
   if (geometry === undefined) return <MapMessage>Loading the map…</MapMessage>
   if (geometry === null) return <MapMessage>The map couldn't load. Reload the page to try again.</MapMessage>
   return <LoadedQuizMap {...props} geometry={geometry} />

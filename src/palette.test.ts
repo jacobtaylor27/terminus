@@ -65,6 +65,31 @@ describe('the palette', () => {
       expect(deltaE2000(seen(a), seen(b))).toBeGreaterThanOrEqual(20)
     },
   )
+
+  // The Continent tints colour the home page's map thumbnails, where a Continent's Countries stand
+  // among the sea and the Territories, and on the world thumbnail, beside the Continents they touch.
+  const tints = ['africa', 'asia', 'europe', 'north-america', 'oceania', 'south-america'].map((c) => `tint-${c}`)
+  it.each(tints.flatMap((tint) => [tint, 'sea', 'territory'].slice(1).map((other) => [tint, other])))(
+    'keeps %s clearly apart from %s, at least 10 apart',
+    (tint, other) => {
+      expect(deltaE2000(colour(tint), colour(other))).toBeGreaterThanOrEqual(10)
+    },
+  )
+
+  const touching = [
+    ['africa', 'asia'],
+    ['africa', 'europe'],
+    ['europe', 'asia'],
+    ['asia', 'oceania'],
+    ['north-america', 'south-america'],
+  ]
+  it.each(touching)('keeps the tints of %s and %s, which touch, at least 15 apart', (a, b) => {
+    expect(deltaE2000(colour(`tint-${a}`), colour(`tint-${b}`))).toBeGreaterThanOrEqual(15)
+  })
+
+  it.each(tints)('keeps %s light enough that a Country border on it shows, at 2:1 or more', (tint) => {
+    expect(contrast(colour('land-edge'), colour(tint))).toBeGreaterThanOrEqual(2)
+  })
 })
 
 // sRGB channels, 0 to 255.

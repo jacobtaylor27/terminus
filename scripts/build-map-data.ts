@@ -1,7 +1,8 @@
 // Builds the maps Terminus draws from Natural Earth's 1:50m shapes (see
 // docs/adr/0001-own-svg-map-not-tile-library.md):
 // - src/map/world-50m.json, the world map, from the admin-0 countries;
-// - src/map/us-states-50m.json, the US map, from the admin-1 states in the variant with the Great Lakes cut out.
+// - src/map/us-states-50m.json, the US map, from the admin-1 states in the variant with the Great Lakes cut out;
+// - src/map/canada-provinces-50m.json, the Canada map, from the admin-1 provinces and territories in that variant.
 // Run with `pnpm map-data`. The output is committed, so builds and tests never need the network.
 import { writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
@@ -114,10 +115,18 @@ const countries = await download<{ ADM0_A3: string }>('ne_50m_admin_0_countries.
 // A dependent territory or breakaway region takes its Country's id, and so is merged into its shape.
 writeMap('world-50m.json', countries.features, ({ ADM0_A3 }) => PARENT_COUNTRIES[ADM0_A3] ?? ADM0_A3)
 
-const states = await download<{ adm0_a3: string; postal: string }>('ne_50m_admin_1_states_provinces_lakes.geojson')
+const statesAndProvinces = await download<{ adm0_a3: string; postal: string }>(
+  'ne_50m_admin_1_states_provinces_lakes.geojson',
+)
 // The 50 States and Washington, D.C., each keyed by its postal code (CA, NY, DC).
 writeMap(
   'us-states-50m.json',
-  states.features.filter((feature) => feature.properties.adm0_a3 === 'USA'),
+  statesAndProvinces.features.filter((feature) => feature.properties.adm0_a3 === 'USA'),
+  ({ postal }) => postal,
+)
+// Canada's 10 provinces and 3 territories, each keyed by its postal code (ON, QC, NU).
+writeMap(
+  'canada-provinces-50m.json',
+  statesAndProvinces.features.filter((feature) => feature.properties.adm0_a3 === 'CAN'),
   ({ postal }) => postal,
 )

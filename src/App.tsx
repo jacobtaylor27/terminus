@@ -27,6 +27,8 @@ interface AppProps {
 
 export function App({ records }: AppProps) {
   const [screen, setScreen] = useState<Screen>({ kind: 'quiz-list' })
+  // The Quiz list's open tab, kept while the player is away from it, so they come back to it.
+  const [openCategory, setOpenCategory] = useState(quizCatalog[0].name)
 
   switch (screen.kind) {
     case 'quiz-list':
@@ -34,6 +36,8 @@ export function App({ records }: AppProps) {
         <QuizListScreen
           categories={quizCatalog}
           records={records}
+          openCategory={openCategory}
+          onOpenCategory={setOpenCategory}
           onChoose={(quiz) => setScreen({ kind: 'attempt-setup', quiz })}
         />
       )
@@ -41,6 +45,7 @@ export function App({ records }: AppProps) {
       return (
         <AttemptSetupScreen
           quiz={screen.quiz}
+          records={records}
           onStart={(mode, timer) => setScreen({ kind: 'attempt', quiz: screen.quiz, mode, timer })}
           onBack={() => setScreen({ kind: 'quiz-list' })}
         />

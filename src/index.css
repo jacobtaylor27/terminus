@@ -14,6 +14,14 @@
   --ochre: #e3a92a; /* the Unfound Highlight, and the "New best!" border */
   --ochre-ink: #6a4708; /* "New best!" text */
   --ochre-wash: #fbe8b8; /* "New best!" fill */
+  /* Each Continent's tint, as an atlas colours them, on the home page's map thumbnails. Continents
+     that touch are far apart in hue. Pale, so they never pass for Found, Missed or the ochre. */
+  --tint-africa: #f3cdc8; /* rose */
+  --tint-asia: #ecd99b; /* butter */
+  --tint-europe: #dbd3f1; /* lavender */
+  --tint-north-america: #c8e0ae; /* sage, which the US map takes too */
+  --tint-oceania: #edcfe8; /* orchid */
+  --tint-south-america: #f5d2ac; /* apricot */
 
   /* Derived from the set above. */
   --hairline: color-mix(in srgb, var(--ink) 14%, transparent); /* dividers */
@@ -123,6 +131,7 @@ body,
 /* Display text is set in the serif: the titles and headings, the Score figures and the Prompt. */
 .app-title,
 .page-heading,
+.category-tab-name,
 .quiz-title,
 .pause-title,
 .results-ending,
@@ -173,11 +182,13 @@ body,
   padding: 3rem 1.5rem;
 }
 
-/* The home page fills the window, so the version sits at its foot. */
+/* The home page is wider than the setup screen, so its Quiz cards sit four to a row in a laptop's
+   window. It fills the window, so the version sits at its foot. */
 .home-page {
   display: flex;
   flex-direction: column;
   min-height: 100%;
+  max-width: 76rem;
 }
 
 .app-version {
@@ -196,199 +207,678 @@ body,
   text-decoration: underline;
 }
 
+/* "Terminus", what it is, and the player's tally: the Stars they've earned and the Quizzes they've
+   played. */
+.home-header {
+  margin-bottom: 0.5rem;
+}
+
 .app-title {
-  margin: 0 0 2rem;
+  margin: 0;
   font-size: 3rem;
+  line-height: 1.1;
   letter-spacing: -0.02em;
 }
 
-.page-heading,
-.quiz-title {
-  font-size: 1.375rem;
-  line-height: 1.2;
+.app-tagline {
+  max-width: 40rem;
+  margin: 0.5rem 0 0;
+  font-size: 1.125rem;
+  color: var(--ink-muted);
+}
+
+.player-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.75rem;
+  margin: 1.25rem 0 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.player-stat,
+.category-stars {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
 }
 
 .page-heading {
   margin: 0 0 1.5rem;
+  font-size: 1.375rem;
+  line-height: 1.2;
 }
 
-/* Each Category is its name, over a hairline, above its Quizzes' cards. */
-.quiz-category + .quiz-category {
-  margin-top: 2.5rem;
+/* The Categories are tabs over the Quiz cards, on a hairline: each its name in the serif, larger than a
+   card's title as it heads them, with the Stars earned in it. The open tab is in ink, underlined in
+   ink, and the others are muted until hovered. */
+.category-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 2.25rem;
+  margin: 2.25rem 0 1.5rem;
+  border-bottom: 1px solid var(--hairline-strong);
 }
 
-.quiz-category-name {
-  margin: 0 0 1rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid var(--hairline);
-  font-size: 0.8125rem;
+.category-tab {
+  position: relative;
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding: 0.25rem 0 0.7rem;
+  font: inherit;
+  color: var(--ink-muted);
+  white-space: nowrap;
+  background: none;
+  border: none;
+  cursor: pointer;
 }
 
-/* Wide enough that "Countries of the World" fits on one line. */
+.category-tab-name {
+  font-size: 1.625rem;
+  line-height: 1.2;
+}
+
+/* The underline sits on the hairline, over it. */
+.category-tab::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+}
+
+.category-tab:hover,
+.category-tab[aria-selected='true'] {
+  color: var(--ink);
+}
+
+.category-tab:hover::after {
+  background: var(--hairline-strong);
+}
+
+.category-tab[aria-selected='true']::after {
+  background: var(--ink);
+}
+
+/* On a phone, a tab's Stars go under its name, so the tabs fit side by side. */
+@media (max-width: 559px) {
+  .category-tabs {
+    column-gap: 1.75rem;
+  }
+
+  .category-tab {
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  .category-tab-name {
+    font-size: 1.375rem;
+  }
+}
+
+.category-stars {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-variant-numeric: tabular-nums lining-nums;
+  color: var(--ink-muted);
+}
+
 .quiz-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(19rem, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(15.5rem, 1fr));
   gap: 1rem;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
+/* Each card is as tall as its row, so the cards in a row line up, top and foot. */
+.quiz-list > li {
+  display: flex;
+}
+
+/* A Quiz card: its map's thumbnail and title, then its Star meter, goal and Personal Bests. */
 .quiz-card {
+  position: relative;
   box-sizing: border-box;
   display: flex;
+  flex: 1;
   flex-direction: column;
-  align-items: flex-start;
-  width: 100%;
-  min-height: 7rem;
-  padding: 1.25rem;
-  font: inherit;
-  color: inherit;
-  text-align: left;
+  min-width: 0;
+  padding: 1rem 1.125rem 1.125rem;
   background: var(--paper-raised);
   border: 1px solid var(--hairline-strong);
   border-radius: 8px;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s,
+    transform 0.15s;
+}
+
+/* Every Star earned: edged in ochre, the colour of awards. */
+.quiz-card.complete {
+  border-color: var(--ochre);
+  box-shadow: inset 0 0 0 1px var(--ochre);
+}
+
+/* Hovered, a card lifts off the page, to show it can be chosen. */
+.quiz-card:hover {
+  border-color: var(--ink);
+  box-shadow: 0 8px 18px -10px var(--hairline-strong);
+  transform: translateY(-2px);
+}
+
+.quiz-card.complete:hover {
+  border-color: var(--ochre-marker);
+  box-shadow:
+    inset 0 0 0 1px var(--ochre-marker),
+    0 8px 18px -10px var(--hairline-strong);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .quiz-card {
+    transition: none;
+  }
+
+  .quiz-card:hover {
+    transform: none;
+  }
+}
+
+/* The title's button stretches over the whole card, so a click anywhere on it chooses the Quiz. */
+.quiz-card-button {
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  background: none;
+  border: none;
   cursor: pointer;
 }
 
-.quiz-card:hover {
-  border-color: var(--ink);
+.quiz-card-button::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
 }
 
-/* The Personal Bests, at the card's foot: one block per setting, each a small label over its figure,
-   so the setting and the result never share a line. */
+/* Keyboard focus outlines the whole card, not just its title. */
+.quiz-card-button:focus-visible {
+  outline: none;
+}
+
+.quiz-card:has(.quiz-card-button:focus-visible) {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.quiz-title {
+  margin: 0;
+  font-size: 1.25rem;
+  line-height: 1.2;
+  text-wrap: balance;
+}
+
+/* The map the Quiz is played on, drawn small as an atlas colours it: sea, grid and outline inside its
+   edge, the Quiz's Places in their Continent's tint, and Territories. It sits at the left, in line
+   with the title. Its height is kept while the map data loads, so the cards don't jump when it
+   arrives. */
+.map-thumbnail {
+  height: 7rem;
+  margin-bottom: 0.875rem;
+}
+
+/* As wide as the map at the thumbnail's height, so it can be placed, but no wider than the card. */
+.map-thumbnail svg {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  height: 100%;
+}
+
+.map-thumbnail .sea {
+  fill: var(--sea);
+}
+
+.map-thumbnail .grid,
+.map-thumbnail .map-outline {
+  fill: none;
+  vector-effect: non-scaling-stroke;
+}
+
+.map-thumbnail .grid {
+  stroke: var(--grid);
+  stroke-width: 0.5px;
+}
+
+.map-thumbnail .map-outline {
+  stroke: var(--land-edge);
+  stroke-width: 1px;
+}
+
+.map-thumbnail .place,
+.map-thumbnail .territory {
+  stroke: var(--land-edge);
+  stroke-width: 0.35px;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.map-thumbnail .place {
+  fill: var(--land);
+}
+
+.map-thumbnail .territory {
+  fill: var(--territory);
+}
+
+.map-thumbnail .tint-africa {
+  fill: var(--tint-africa);
+}
+
+.map-thumbnail .tint-asia {
+  fill: var(--tint-asia);
+}
+
+.map-thumbnail .tint-europe {
+  fill: var(--tint-europe);
+}
+
+.map-thumbnail .tint-north-america {
+  fill: var(--tint-north-america);
+}
+
+.map-thumbnail .tint-oceania {
+  fill: var(--tint-oceania);
+}
+
+.map-thumbnail .tint-south-america {
+  fill: var(--tint-south-america);
+}
+
+/* The Star meter, the goal for the next Star and any Personal Bests, under the title. The meters in a
+   row of cards line up, and a card with less to show leaves its spare room at its foot. */
+.quiz-progress {
+  padding-top: 1rem;
+}
+
+/* The best Score as a bar in teal, the colour of Found, with a Star sitting on it at half, four-fifths
+   and all of the Places. The last Star hangs half past the bar's end, so the bar stops short of the
+   card's edge to make room. */
+.star-meter {
+  position: relative;
+  height: 1.25rem;
+  margin-right: 0.625rem;
+}
+
+.star-meter-track {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  left: 0;
+  height: 0.375rem;
+  overflow: hidden;
+  background: var(--hairline);
+  border-radius: 999px;
+  transform: translateY(-50%);
+}
+
+.star-meter-fill {
+  height: 100%;
+  background: var(--found);
+}
+
+.star-meter .star {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* A Star: an outline until it's earned, then filled in ochre. Its paper fill hides the bar behind
+   it. */
+.star {
+  display: block;
+  flex: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  fill: var(--paper-raised);
+  stroke: var(--hairline-strong);
+  stroke-width: 1.4px;
+  stroke-linejoin: round;
+}
+
+.star.earned {
+  fill: var(--ochre);
+  stroke: var(--ochre-marker);
+}
+
+.player-stat .star {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.category-stars .star {
+  width: 1rem;
+  height: 1rem;
+}
+
+.quiz-goal {
+  margin: 0.5rem 0 0;
+  font-size: 0.875rem;
+  color: var(--ink-muted);
+}
+
+.quiz-card.complete .quiz-goal {
+  font-weight: 600;
+  color: var(--ochre-ink);
+}
+
+/* The Personal Bests, under a hairline. */
 .quiz-bests {
-  display: flex;
-  flex-direction: column;
-  align-self: stretch;
-  margin-top: auto;
+  margin-top: 0.75rem;
   padding-top: 0.75rem;
-}
-
-.quiz-bests-heading {
-  padding-bottom: 0.4rem;
-}
-
-.quiz-best {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  padding: 0.7rem 0;
   border-top: 1px solid var(--hairline);
 }
 
-.quiz-best:last-child {
-  padding-bottom: 0;
+/* In a Quiz with more than one Mode, each Mode's Personal Bests are under its name. */
+.quiz-best-group + .quiz-best-group {
+  margin-top: 0.5rem;
 }
 
+.quiz-best-mode {
+  margin: 0 0 0.1rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.quiz-best-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin: 0;
+}
+
+/* Each Personal Best is one line: its setting at the left and its figure at the right. A setting too
+   long for the card wraps, rather than the figure. */
+.quiz-best {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.quiz-best dt {
+  min-width: 0;
+  font-size: 0.8125rem;
+  color: var(--ink-muted);
+}
+
+.quiz-best dd {
+  margin: 0;
+  white-space: nowrap;
+}
+
+/* Sized so the muted "/total" is the size of the time beside it. */
 .quiz-best .score-figure {
   font-size: 1.375rem;
   line-height: 1.1;
 }
 
 .quiz-best-time {
+  font-size: 0.8125rem;
   font-variant-numeric: tabular-nums lining-nums;
-}
-
-.quiz-best-time,
-.quiz-best-unplayed {
   color: var(--ink-muted);
 }
 
+/* On a phone, the thumbnail sits at the card's left, beside the title, so more cards fit on the
+   screen. The Star meter, goal and Personal Bests run across the whole card under them. */
+@media (max-width: 559px) {
+  .quiz-card {
+    display: grid;
+    grid-template-columns: 5.5rem minmax(0, 1fr);
+    align-items: center;
+    column-gap: 1rem;
+    padding: 0.875rem;
+  }
+
+  .map-thumbnail {
+    height: 4.5rem;
+    margin: 0;
+  }
+
+  .map-thumbnail svg {
+    margin-inline: auto;
+  }
+
+  .quiz-title {
+    font-size: 1.125rem;
+  }
+
+  .quiz-progress {
+    grid-column: 1 / -1;
+    padding-top: 0.875rem;
+  }
+}
+
+/* The setup screen is an atlas spread: the Quiz's map, title and Stars at the left, and the settings
+   at the right. */
+.setup-page {
+  max-width: 62rem;
+}
+
 .setup-back {
-  margin: 0 0 1.5rem;
+  margin: 0 0 1.75rem;
+}
+
+.setup-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 20rem) minmax(0, 1fr);
+  align-items: start;
+  gap: 2.5rem 3.5rem;
+}
+
+/* The map is drawn as a plate: as large as fits the frame, whatever its shape. */
+.setup-map {
+  box-sizing: border-box;
+  aspect-ratio: 4 / 3;
+  padding: 1rem;
+  background: var(--paper-raised);
+  border: 1px solid var(--hairline-strong);
+  border-radius: 10px;
+}
+
+.setup-map .map-thumbnail {
+  height: 100%;
+  margin: 0;
+}
+
+.setup-map .map-thumbnail svg {
+  width: 100%;
+  height: 100%;
+}
+
+.setup-title {
+  margin: 1.25rem 0 1rem;
+  font-size: 2.25rem;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
 }
 
 .attempt-setup {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 1.5rem;
+  gap: 2rem;
 }
 
-.mode-picker,
-.timer-picker {
+.setup-section {
+  min-width: 0;
   margin: 0;
   padding: 0;
   border: none;
 }
 
-.mode-picker {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-}
-
-.mode-picker legend,
-.timer-picker legend {
-  margin-bottom: 0.5rem;
+.setup-legend {
+  margin-bottom: 0.75rem;
   padding: 0;
+  font-family: var(--display-font);
+  font-size: 1.25rem;
   font-weight: 600;
 }
 
-/* Options side by side all stretch to the tallest one's height. A shorter one keeps its description
-   right under its name, and leaves the spare height empty below. */
-.mode-option {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  align-content: start;
-  column-gap: 0.5rem;
-  width: 16rem;
-  padding: 0.75rem 1rem;
+.mode-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+/* A setting is a row: its picture, then its name over what it does, then its control at the right.
+   The whole row is the control's label, so a click anywhere on it chooses. */
+.setup-option {
   background: var(--paper-raised);
   border: 1px solid var(--hairline-strong);
-  border-radius: 8px;
+  border-radius: 10px;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+
+.mode-option,
+.timer-toggle {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 0.875rem;
+  padding: 0.875rem 1rem;
   cursor: pointer;
 }
 
-.mode-option:hover {
+.mode-option:hover,
+.timer-setting:has(.timer-toggle:hover) {
   border-color: var(--ink);
 }
 
-.mode-option:has(:checked) {
+/* Chosen, or switched on: an ink border and ring, and its picture's tile turns to sea. */
+.mode-option:has(:checked),
+.timer-setting.on {
   border-color: var(--ink);
   box-shadow: 0 0 0 1px var(--ink);
 }
 
-.mode-option input {
-  margin: 0.2rem 0 0;
-  accent-color: var(--ink);
+/* Keyboard focus outlines the whole row, not just its control. */
+.setup-option input:focus-visible {
+  outline: none;
 }
 
-.mode-name {
+.mode-option:has(input:focus-visible),
+.timer-setting:has(.timer-toggle input:focus-visible) {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.option-glyph {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  background: var(--land);
+  border-radius: 8px;
+  transition: background 0.15s;
+}
+
+.mode-option:has(:checked) .option-glyph,
+.timer-setting.on .option-glyph {
+  background: var(--sea);
+}
+
+.option-glyph svg {
+  display: block;
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+.glyph-cell,
+.glyph-card {
+  fill: var(--paper-raised);
+  stroke: var(--hairline-strong);
+  stroke-width: 1.25px;
+}
+
+.glyph-cell.found {
+  fill: var(--found);
+  stroke: var(--found-marker);
+}
+
+.glyph-card.front {
+  stroke: var(--ink);
+  stroke-width: 1.5px;
+}
+
+.glyph-line {
+  fill: none;
+  stroke: var(--ink-muted);
+  stroke-width: 1.75px;
+  stroke-linecap: round;
+}
+
+.glyph-line.clue {
+  stroke: var(--found);
+  stroke-width: 2.5px;
+}
+
+.glyph-pin {
+  fill: var(--ink);
+}
+
+.option-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.option-name {
   font-weight: 600;
 }
 
-.mode-description {
-  grid-column: 2;
+.option-description {
   font-size: 0.875rem;
+  line-height: 1.4;
   color: var(--ink-muted);
 }
 
-.timer-setting {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.75rem 2rem;
-  padding: 0.75rem 1rem;
+/* A Mode's radio button: a ring, with an ink dot in it once chosen. */
+.option-check {
+  appearance: none;
+  flex: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin: 0;
   background: var(--paper-raised);
-  border: 1px solid var(--hairline-strong);
-  border-radius: 8px;
-}
-
-.timer-toggle {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
+  border: 1.5px solid var(--hairline-strong);
+  border-radius: 50%;
   cursor: pointer;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
 }
 
+.option-check:checked {
+  background: var(--ink);
+  border-color: var(--ink);
+  box-shadow: inset 0 0 0 0.25rem var(--paper-raised);
+}
+
+/* The Timer's switch. */
 .timer-toggle input {
   appearance: none;
   position: relative;
   flex: none;
-  width: 2.25rem;
-  height: 1.25rem;
+  width: 2.5rem;
+  height: 1.4rem;
   margin: 0;
   background: var(--hairline-strong);
   border-radius: 999px;
@@ -399,10 +889,10 @@ body,
 .timer-toggle input::before {
   content: '';
   position: absolute;
-  top: 0.15rem;
-  left: 0.15rem;
-  width: 0.95rem;
-  height: 0.95rem;
+  top: 0.2rem;
+  left: 0.2rem;
+  width: 1rem;
+  height: 1rem;
   background: var(--paper-raised);
   border-radius: 50%;
   transition: transform 0.15s;
@@ -413,7 +903,26 @@ body,
 }
 
 .timer-toggle input:checked::before {
-  transform: translateX(1rem);
+  transform: translateX(1.1rem);
+}
+
+/* Switched on, the Timer's length shows under its row, in line with the row's text. */
+.timer-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.5rem;
+  margin: 0 1rem;
+  padding: 0.875rem 0 1rem 3.625rem;
+  border-top: 1px solid var(--hairline);
+  animation: timer-controls-reveal 0.18s ease-out;
+}
+
+@keyframes timer-controls-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(-0.25rem);
+  }
 }
 
 .timer-stepper {
@@ -423,29 +932,129 @@ body,
 }
 
 .timer-stepper button {
-  width: 2rem;
-  height: 2rem;
+  width: 2.25rem;
+  height: 2.25rem;
   padding: 0;
   font-size: 1.125rem;
   line-height: 1;
-}
-
-/* While the Timer is off, its duration fades with the stepper's buttons. */
-.timer-stepper button:disabled,
-.timer-stepper.off .timer-duration {
-  opacity: 0.4;
+  border-radius: 50%;
 }
 
 .timer-stepper button:disabled {
+  opacity: 0.4;
   cursor: default;
 }
 
 .timer-duration {
-  min-width: 3.5rem;
-  font-size: 1.25rem;
+  min-width: 4rem;
+  font-size: 1.5rem;
   font-weight: 600;
-  font-variant-numeric: tabular-nums;
+  font-variant-numeric: tabular-nums lining-nums;
   text-align: center;
+}
+
+.timer-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.timer-preset {
+  padding: 0.3rem 0.75rem;
+  font-size: 0.875rem;
+  border-radius: 999px;
+}
+
+/* The preset the Timer is set to, filled in ink. */
+.timer-preset[aria-pressed='true'] {
+  font-weight: 600;
+  color: var(--paper);
+  background: var(--ink);
+  border-color: var(--ink);
+}
+
+.timer-preset[aria-pressed='true']:hover {
+  background: var(--primary-hover);
+}
+
+/* Start, with the Personal Best for the chosen Mode and Timer beside it: what this Attempt is
+   played against. */
+.setup-start {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--hairline-strong);
+}
+
+.setup-best {
+  margin: 0;
+  font-size: 0.9375rem;
+  color: var(--ink-muted);
+}
+
+.setup-best .score-figure {
+  font-size: 1.375rem;
+  color: var(--ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .setup-option,
+  .option-glyph,
+  .option-check,
+  .timer-toggle input,
+  .timer-toggle input::before {
+    transition: none;
+  }
+
+  .timer-controls {
+    animation: none;
+  }
+}
+
+/* Narrower, the settings move under the map, which shrinks to sit beside the title, as on a phone's
+   Quiz card. */
+@media (max-width: 759px) {
+  .setup-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .setup-plate {
+    display: grid;
+    grid-template-columns: 8rem minmax(0, 1fr);
+    align-items: center;
+    column-gap: 1.25rem;
+  }
+
+  .setup-map {
+    padding: 0.5rem;
+  }
+
+  .setup-title {
+    margin-top: 0;
+    font-size: 1.75rem;
+  }
+}
+
+/* On a phone, the Timer's length sits under the row's picture too, as the row is too narrow to
+   indent it, and Start runs the width of the screen. */
+@media (max-width: 479px) {
+  .page.setup-page {
+    padding-top: 1.5rem;
+  }
+
+  .setup-plate {
+    grid-template-columns: 6rem minmax(0, 1fr);
+  }
+
+  .timer-controls {
+    padding-left: 0;
+  }
+
+  .setup-start .primary-button {
+    flex: 1;
+  }
 }
 
 .attempt-screen {

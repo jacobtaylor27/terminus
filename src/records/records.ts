@@ -49,6 +49,9 @@ export interface Records {
   history(): AttemptRecord[]
   // The Personal Best for the Quiz played in the Mode with the Timer setting, unless none has finished.
   personalBest(quiz: Quiz, mode: Mode, timerMs: TimerSetting): AttemptRecord | undefined
+  // Every Personal Best for the Quiz, one for each Mode and Timer setting it has one for: in the Quiz's
+  // order of Modes, and within a Mode untimed first, then the shorter Timer first.
+  personalBests(quiz: Quiz): AttemptRecord[]
 }
 
 const STORAGE_KEY = 'terminus.records'
@@ -113,7 +116,7 @@ export function openRecords(storage: RecordStorage, clock: Clock): Records {
       const previousBest = personalBestAmong(attempts, quiz, mode, record.timerMs)
       const stored: StoredRecords = { version: 1, attempts: [...attempts, record] }
       storage.setItem(STORAGE_KEY, JSON.stringify(stored))
-      return { newBest: !previousBest || beats(record, previousBest) }
+      return { newBest: canBeBest(record) && (!previousBest || beats(record, previousBest)) }
     },
 
     history,
@@ -121,7 +124,28 @@ export function openRecords(storage: RecordStorage, clock: Clock): Records {
     personalBest(quiz, mode, timerMs) {
       return personalBestAmong(history(), quiz, mode, timerMs)
     },
+
+    personalBests(quiz) {
+      const bestsBySetting = new Map<string, AttemptRecord>()
+      for (const record of history()) {
+        if (record.quizId !== quiz.id || !quiz.modes.includes(record.mode) || !canBeBest(record)) continue
+        const setting = `${record.mode} ${record.timerMs}`
+        const best = bestsBySetting.get(setting)
+        if (!best || beats(record, best)) bestsBySetting.set(setting, record)
+      }
+      return [...bestsBySetting.values()].sort(
+        (a, b) =>
+          quiz.modes.indexOf(a.mode) - quiz.modes.indexOf(b.mode) ||
+          (a.timerMs ?? 0) - (b.timerMs ?? 0),
+      )
+    },
   }
+}
+
+// Whether a finished Attempt can be a Personal Best. One that Found nothing can't, so giving up at once
+// never sets one.
+function canBeBest(record: AttemptRecord): boolean {
+  return record.score > 0
 }
 
 // Whether one finished Attempt is better than another: a higher Score wins, and on equal Scores the
@@ -131,7 +155,7 @@ function beats(record: AttemptRecord, other: AttemptRecord): boolean {
 }
 
 // The Personal Best among the finished Attempts for the Quiz played in the Mode with the Timer setting:
-// the best Attempt played so, or the earliest of those equally good.
+// the best Attempt played so that can be one, or the earliest of those equally good.
 function personalBestAmong(
   attempts: AttemptRecord[],
   quiz: Quiz,
@@ -141,7 +165,7 @@ function personalBestAmong(
   let best: AttemptRecord | undefined
   for (const record of attempts) {
     if (record.quizId !== quiz.id || record.mode !== mode || record.timerMs !== timerMs) continue
-    if (!best || beats(record, best)) best = record
+    if (canBeBest(record) && (!best || beats(record, best))) best = record
   }
   return best
 }

@@ -4,12 +4,14 @@ import {
   type GeoProjection,
   geoAlbersUsa,
   geoAzimuthalEqualArea,
+  geoConicConformal,
   geoGraticule10,
   geoNaturalEarth1,
   geoPath,
 } from 'd3-geo'
 import type { MultiPoint } from 'geojson'
 import type { MapId } from '../quiz/quiz.ts'
+import canadaProvincesUrl from './canada-provinces-50m.json?url'
 import type { MapShape } from './mapShapes.ts'
 import usStatesUrl from './us-states-50m.json?url'
 import worldUrl from './world-50m.json?url'
@@ -60,6 +62,13 @@ const EDGE_MARGIN: Margin = { top: 1, right: 1, bottom: 1, left: 1 }
 // the States in tall windows and on phones.
 const US_MARGIN: Margin = { top: 100, right: 0, bottom: 200, left: 0 }
 
+// Room below the Provinces, so the answer box, with Cued Recall's Prompt over it, sits under southern
+// Ontario at common laptop window sizes. Canada is about as tall as it is wide, so at those sizes the
+// map is fitted to the window's height and the panels take up more of its units than on the US map.
+// Little room above: Ellesmere Island, the northernmost land, is mid-map, between the Score and the
+// controls, and the Yukon is clear of the Score below it.
+const CANADA_MARGIN: Margin = { top: 40, right: 0, bottom: 280, left: 0 }
+
 export const maps: Record<MapId, MapDefinition> = {
   world: {
     name: 'World map',
@@ -75,6 +84,18 @@ export const maps: Record<MapId, MapDefinition> = {
     // Albers USA draws Alaska and Hawaii as insets below the other States, so all 50 are in view at once.
     frame(shapes) {
       const { path, height } = fit(geoAlbersUsa(), { type: 'FeatureCollection', features: shapes }, US_MARGIN)
+      return { width: WIDTH, height, path, edge: null }
+    },
+  },
+  canada: {
+    name: 'Map of Canada',
+    dataUrl: canadaProvincesUrl,
+    // Statistics Canada's Lambert conformal conic, true to scale along the 49th and 77th parallels, so the
+    // Provinces in the south and the Arctic islands in the north keep their shapes. It has no edge, as the
+    // US map has none: only Canada is drawn.
+    frame(shapes) {
+      const projection = geoConicConformal().parallels([49, 77]).rotate([91.87, 0])
+      const { path, height } = fit(projection, { type: 'FeatureCollection', features: shapes }, CANADA_MARGIN)
       return { width: WIDTH, height, path, edge: null }
     },
   },
@@ -159,7 +180,7 @@ function outlineOf([[west, south], [east, north]]: PlateBox): MultiPoint {
 
 // The map's edge: the outline of the whole sphere, which a plate's clip cuts down to its rectangle, and
 // the 10° grid inside it.
-function edgeOf(path: GeoPath) {
+export function edgeOf(path: GeoPath) {
   return { outline: path(SPHERE) ?? '', grid: path(geoGraticule10()) ?? '' }
 }
 

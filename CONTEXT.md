@@ -5,11 +5,11 @@ A geography quiz game played on a map. The player picks a quiz and answers by ty
 ## Language
 
 **Quiz**:
-A selectable set of geographic content to be tested on, defined by which places it covers and what is asked about them (e.g. *Countries of the World*, *Countries of Africa*, *Capitals of Africa*, *US State Capitals*).
+A selectable set of geographic content to be tested on, defined by which places it covers and what is asked about them (e.g. *Countries of the World*, *Countries of Africa*, *Capitals of Africa*, *US State Capitals*, *Canadian Capitals*).
 _Avoid_: Game, quiz mode, level
 
 **Category**:
-A heading the Quiz list groups Quizzes under, by what they ask the player to name: *Countries* (*Countries of the World* and each Continent's) or *Capitals* (each Continent's and *US State Capitals*).
+A tab of the Quiz list, which groups Quizzes by what they ask the player to name: *Countries* (*Countries of the World* and each Continent's) or *Capitals* (each Continent's, *US State Capitals* and *Canadian Capitals*).
 _Avoid_: Genre, section, group
 
 **Mode**:
@@ -23,7 +23,7 @@ A Mode with no prompts: the player types any answer in any order, and each corre
 A Mode where the player is given one Prompt at a time, in a random order, and types the answer to it. They may Skip a Prompt they're stuck on.
 
 **Prompt**:
-In Cued Recall, what the player is being asked right now: one Unfound Place, shown by a clue that isn't its name. For a capital, the clue is the State or Country it is the capital of. Unlike in Name, the map doesn't show where the Place is.
+In Cued Recall, what the player is being asked right now: one Unfound Place, shown by a clue that isn't its name. For a capital, the clue is the State, Province or Country it is the capital of. Unlike in Name, the map doesn't show where the Place is.
 _Avoid_: Question, cue
 
 **Skip**:
@@ -54,8 +54,12 @@ _Avoid_: Region
 **State**:
 One of the 50 states of the United States. In *US State Capitals*, each State is drawn on the map and named by the Prompt for its capital. Washington, D.C. is not a State.
 
+**Province**:
+One of Canada's 10 provinces and 3 territories. In *Canadian Capitals*, each Province is drawn on the map and named by the Prompt for its capital. Yukon, the Northwest Territories and Nunavut are Provinces here, though Canada calls them territories, since a Territory is land that is never an answer. Ottawa is no Province's capital, so it is not an answer.
+_Avoid_: Territory, for Yukon, the Northwest Territories or Nunavut
+
 **Territory**:
-Land on a map that is never an answer. On the world map: land that belongs to no Country, which is Antarctica and the disputed Western Sahara and Siachen Glacier. On a Continent's map: that land, and every Country of another Continent. On the US map: Washington, D.C., which is in no State. A Territory is drawn in flat grey but is never an answer.
+Land on a map that is never an answer. On the world map: land that belongs to no Country, which is Antarctica and the disputed Western Sahara and Siachen Glacier. On a Continent's map: that land, and every Country of another Continent. On the US map: Washington, D.C., which is in no State. The Canada map has none: every shape on it is a Province. A Territory is drawn in flat grey but is never an answer.
 _Avoid_: Using it for dependent territories, which are part of their Country
 
 **Alias**:
@@ -72,8 +76,12 @@ _Avoid_: Game, session, round, run
 The number of correct answers found in an Attempt, shown out of the total (e.g. 162/197).
 
 **Personal Best**:
-The best Attempt saved in this browser for a given Quiz, Mode and Timer setting: highest Score, with ties going to the shorter time.
+The best Attempt saved in this browser for a given Quiz, Mode and Timer setting: highest Score, with ties going to the shorter time. An Attempt with a Score of 0 is never one, so giving up at once doesn't set one.
 _Avoid_: High score, record
+
+**Star**:
+An award a Quiz earns for its best Score in any Mode and with any Timer setting: one for naming half of its Places, two for four-fifths, and three for all of them, each share rounded up. The home page shows each Quiz's Stars, and how many the player has earned in all.
+_Avoid_: Medal, rating, level
 
 **Wrong Guess**:
 A guess the player commits by pressing Enter on text that isn't a correct answer. In Free Recall, that is text that matches no answer in the Quiz. In Cued Recall, it is anything but the answer to the current Prompt, even another Place's answer. Text deleted before committing is never a Wrong Guess, and neither is an answer already Found in Free Recall.

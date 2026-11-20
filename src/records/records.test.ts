@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { type Attempt, hasEnded, startAttempt, type TimerSetting } from '../attempt/attempt.ts'
 import { countriesOfTheWorld } from '../quiz/countriesOfTheWorld.ts'
-import type { Quiz } from '../quiz/quiz.ts'
+import type { Mode, Quiz } from '../quiz/quiz.ts'
 import { usStateCapitals } from '../quiz/usStateCapitals.ts'
 import { inMemoryStorage, openRecords, type Records } from './records.ts'
 
@@ -23,16 +23,29 @@ function endedState(attempt: Attempt) {
   return state
 }
 
-// An Attempt of Countries of the World that Found the given number of Countries and was given up
-// after the given time, played with the given Timer setting.
-function gaveUp({ score, elapsedMs, timerMs = null }: { score: number; elapsedMs: number; timerMs?: TimerSetting }) {
+interface Played {
+  score: number
+  elapsedMs: number
+  timerMs?: TimerSetting
+}
+
+// An Attempt of the Quiz in the Mode that Found the given number of answers and was given up after the
+// given time, played with the given Timer setting.
+function gaveUpOn(quiz: Quiz, mode: Mode, { score, elapsedMs, timerMs = null }: Played) {
   const clock = testClock()
-  const attempt = startAttempt(countriesOfTheWorld, 'free-recall', clock.now, timerMs)
-  for (const place of countriesOfTheWorld.places.slice(0, score)) attempt.inputChanged(place.name)
+  const attempt = startAttempt(quiz, mode, clock.now, timerMs)
+  for (let found = 0; found < score; found++) {
+    const answer = mode === 'cued-recall' ? attempt.state().prompt?.name : quiz.places[found].name
+    if (!answer) throw new Error('The Cued Recall Attempt has no Prompt')
+    attempt.inputChanged(answer)
+  }
   clock.advance(elapsedMs)
   attempt.giveUp()
   return endedState(attempt)
 }
+
+// An Attempt of Countries of the World in Free Recall, as gaveUpOn plays it.
+const gaveUp = (played: Played) => gaveUpOn(countriesOfTheWorld, 'free-recall', played)
 
 // The Personal Best for Countries of the World in Free Recall, played without a Timer or with the one given.
 const bestFor = (records: Records, timerMs: TimerSetting = null) =>
@@ -209,6 +222,65 @@ describe('Personal Best', () => {
     expect([cued.newBest, free.newBest]).toEqual([true, true])
     expect(records.personalBest(usStateCapitals, 'cued-recall', null)).toMatchObject({ mode: 'cued-recall', score: 30 })
     expect(records.personalBest(usStateCapitals, 'free-recall', null)).toMatchObject({ mode: 'free-recall', score: 10 })
+  })
+
+  it('is never an Attempt that Found nothing, so giving up at once sets none, however quickly', () => {
+    const records = openRecords(inMemoryStorage(), testClock().now)
+
+    const first = records.save(countriesOfTheWorld, 'free-recall', gaveUp({ score: 0, elapsedMs: 4_000 }))
+    const quicker = records.save(countriesOfTheWorld, 'free-recall', gaveUp({ score: 0, elapsedMs: 2_000 }))
+
+    expect([first.newBest, quicker.newBest]).toEqual([false, false])
+    expect(bestFor(records)).toBeUndefined()
+    expect(records.history()).toHaveLength(2)
+  })
+
+  it('goes to the first Attempt that Found anything, after ones that Found nothing', () => {
+    const records = openRecords(inMemoryStorage(), testClock().now)
+    records.save(countriesOfTheWorld, 'free-recall', gaveUp({ score: 0, elapsedMs: 4_000 }))
+
+    const { newBest } = records.save(countriesOfTheWorld, 'free-recall', gaveUp({ score: 1, elapsedMs: 60_000 }))
+
+    expect(newBest).toBe(true)
+    expect(bestFor(records)).toMatchObject({ score: 1 })
+  })
+})
+
+describe("a Quiz's Personal Bests", () => {
+  it('are none for a Quiz never played', () => {
+    const records = openRecords(inMemoryStorage(), testClock().now)
+    records.save(countriesOfTheWorld, 'free-recall', gaveUp({ score: 40, elapsedMs: 300_000 }))
+
+    expect(records.personalBests(usStateCapitals)).toEqual([])
+  })
+
+  it('are the best for each setting played, in Mode order, untimed first, then the shorter Timer first', () => {
+    const records = openRecords(inMemoryStorage(), testClock().now)
+    const play = (mode: Mode, played: Played) => records.save(usStateCapitals, mode, gaveUpOn(usStateCapitals, mode, played))
+    play('cued-recall', { score: 20, elapsedMs: 300_000, timerMs: 600_000 })
+    play('free-recall', { score: 12, elapsedMs: 900_000, timerMs: 900_000 })
+    play('cued-recall', { score: 30, elapsedMs: 400_000 })
+    play('free-recall', { score: 15, elapsedMs: 800_000, timerMs: 900_000 })
+    play('free-recall', { score: 25, elapsedMs: 500_000 })
+    play('free-recall', { score: 8, elapsedMs: 300_000, timerMs: 300_000 })
+
+    const settings = records.personalBests(usStateCapitals).map(({ mode, timerMs, score }) => [mode, timerMs, score])
+
+    expect(settings).toEqual([
+      ['free-recall', null, 25],
+      ['free-recall', 300_000, 8],
+      ['free-recall', 900_000, 15],
+      ['cued-recall', null, 30],
+      ['cued-recall', 600_000, 20],
+    ])
+  })
+
+  it('leave out a setting whose every Attempt Found nothing', () => {
+    const records = openRecords(inMemoryStorage(), testClock().now)
+    records.save(countriesOfTheWorld, 'free-recall', gaveUp({ score: 0, elapsedMs: 4_000 }))
+    records.save(countriesOfTheWorld, 'free-recall', gaveUp({ score: 3, elapsedMs: 60_000, timerMs: 900_000 }))
+
+    expect(records.personalBests(countriesOfTheWorld)).toMatchObject([{ timerMs: 900_000, score: 3 }])
   })
 })
 

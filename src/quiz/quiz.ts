@@ -15,7 +15,8 @@ export interface Place {
   id: string
   name: string
   aliases?: string[]
-  // A clue to the Place that isn't its name. For a capital, it's the State it is the capital of.
+  // A clue to the Place that isn't its name. For a capital, it's the State, Province or Country it is the
+  // capital of.
   prompt?: string
 }
 
@@ -24,8 +25,8 @@ export function acceptedNames(place: Place): string[] {
   return [place.name, ...(place.aliases ?? [])]
 }
 
-// The maps a Quiz can be played on: the world map, the US map, and a map of each Continent.
-export type MapId = 'world' | 'us-states' | Continent
+// The maps a Quiz can be played on: the world map, the US map, the Canada map, and a map of each Continent.
+export type MapId = 'world' | 'us-states' | 'canada' | Continent
 
 export interface Quiz {
   id: string

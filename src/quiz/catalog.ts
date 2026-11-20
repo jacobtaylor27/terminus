@@ -1,3 +1,4 @@
+import { canadianCapitals } from './canadianCapitals.ts'
 import {
   capitalsOfAfrica,
   capitalsOfAsia,
@@ -48,6 +49,7 @@ export const quizCatalog: readonly QuizCategory[] = [
       capitalsOfOceania,
       capitalsOfSouthAmerica,
       usStateCapitals,
+      canadianCapitals,
     ],
   },
 ]
